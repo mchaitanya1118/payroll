@@ -123,10 +123,14 @@
     @apply border-border outline-ring/50;
   }
   body {
-    @apply bg-background text-foreground bg-[radial-gradient(circle_at_top_right,oklch(0.985_0_0),oklch(1_0_0))];
+    @apply bg-background text-foreground bg-[radial-gradient(circle_at_top_right,oklch(0.985_0_0),oklch(1_0_0))] antialiased min-h-screen Selection:bg-emerald-500/20 Selection:text-emerald-900;
   }
   html {
-    @apply font-sans;
+    @apply font-sans scroll-smooth;
+    font-size: 14px;
+  }
+  @variant md {
+    html { font-size: 16px; }
   }
 }
 
@@ -157,6 +161,33 @@
 
   .sidebar-item-active {
     @apply bg-gradient-to-r from-emerald-500 to-emerald-600 text-slate-900 font-bold shadow-lg shadow-emerald-500/20 translate-x-1;
+  }
+
+  /* Responsive Scrollbars */
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+  
+  .custom-scrollbar::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  
+  .custom-scrollbar::-webkit-scrollbar-track {
+    @apply bg-transparent;
+  }
+  
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    @apply bg-slate-300 rounded-full hover:bg-slate-400 transition-colors;
+  }
+
+  /* Responsive Grid Utilities */
+  .grid-responsive {
+    @apply grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6;
+  }
+
+  .tap-highlight-none {
+    -webkit-tap-highlight-color: transparent;
   }
 }
 /* Hide Next.js Dev Indicator */
