@@ -31,7 +31,9 @@ export default function RegisterPage() {
       toast.success('Business registered successfully!');
       router.push('/dashboard');
     } catch (error: any) {
-      toast.error(error.response?.data?.message || 'Registration failed');
+      console.error('Registration error:', error);
+      const message = error.response?.data?.message || error.message || 'Registration failed';
+      toast.error(message);
     } finally {
       setLoading(false);
     }
