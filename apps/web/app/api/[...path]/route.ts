@@ -29,7 +29,7 @@ async function handleRequest(request: NextRequest, pathParts: string[]) {
 
   try {
     const body = ['POST', 'PATCH', 'PUT'].includes(request.method) 
-      ? await request.text() 
+      ? await request.arrayBuffer() 
       : undefined;
 
     const headers = new Headers(request.headers);
