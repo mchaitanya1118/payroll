@@ -1,16 +1,21 @@
 # Use Node.js base image
-FROM node:22 AS builder
+FROM node:22-alpine AS builder
+
+# Add compatibility for modern build tools and native modules
+RUN apk add --no-cache libc6-compat python3 make g++
 
 WORKDIR /app
 
-# Copy root package.json and monorepo files
+# Copy lockfile and package definitions first for better caching
 COPY package.json package-lock.json ./
 COPY apps/web/package.json ./apps/web/
-# Copy all source files
-COPY . .
+COPY apps/api/package.json ./apps/api/
 
-# Install dependencies (including those for the monorepo)
+# Install dependencies
 RUN npm install --include=dev
+
+# Copy the rest of the source
+COPY . .
 
 # Build the Next.js app
 WORKDIR /app/apps/web
@@ -18,7 +23,7 @@ ENV INTERNAL_API_URL=http://api:4000
 RUN npm run build
 
 # Production image
-FROM node:22 AS runner
+FROM node:22-alpine AS runner
 
 WORKDIR /app
 
