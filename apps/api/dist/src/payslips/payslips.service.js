@@ -12,10 +12,56 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.PayslipsService = void 0;
 const common_1 = require("@nestjs/common");
 const prisma_service_1 = require("../prisma/prisma.service");
+const mail_service_1 = require("../mail/mail.service");
 let PayslipsService = class PayslipsService {
     prisma;
-    constructor(prisma) {
+    mailService;
+    constructor(prisma, mailService) {
         this.prisma = prisma;
+        this.mailService = mailService;
+    }
+    async sendPayslipEmail(id) {
+        const payslip = await this.prisma.payslip.findUnique({
+            where: { id },
+            include: { rider: true },
+        });
+        if (!payslip)
+            throw new common_1.NotFoundException('Payslip not found');
+        if (!payslip.rider.email) {
+            throw new common_1.BadRequestException(`Rider ${payslip.rider.riderName} does not have an email associated.`);
+        }
+        return this.mailService.sendPayslipEmail(payslip.rider.email, payslip.rider.riderName, payslip.month, payslip.year, {
+            grossAmount: payslip.grossAmount,
+            deductions: payslip.deductions + payslip.salesCash + payslip.carRent + payslip.akama + payslip.fine + payslip.bankDeduction,
+            netTotal: payslip.netTotal,
+        });
+    }
+    async sendBulkEmails(tenantId, month, year) {
+        const slips = await this.prisma.payslip.findMany({
+            where: { tenantId, month, year, rider: { email: { not: null } } },
+            include: { rider: true },
+        });
+        const results = {
+            total: slips.length,
+            sent: 0,
+            failed: 0,
+            errors: [],
+        };
+        for (const slip of slips) {
+            try {
+                await this.mailService.sendPayslipEmail(slip.rider.email, slip.rider.riderName, slip.month, slip.year, {
+                    grossAmount: slip.grossAmount,
+                    deductions: slip.deductions + slip.salesCash + slip.carRent + slip.akama + slip.fine + slip.bankDeduction,
+                    netTotal: slip.netTotal,
+                });
+                results.sent++;
+            }
+            catch (error) {
+                results.failed++;
+                results.errors.push(`Failed for ${slip.rider.riderName}: ${error.message}`);
+            }
+        }
+        return results;
     }
     async getDashboard(tenantId, month, year, search) {
         console.log(`[PayslipsService] Fetching dashboard for month: ${month}, year: ${year}, search: ${search}`);
@@ -214,6 +260,7 @@ let PayslipsService = class PayslipsService {
 exports.PayslipsService = PayslipsService;
 exports.PayslipsService = PayslipsService = __decorate([
     (0, common_1.Injectable)(),
-    __metadata("design:paramtypes", [prisma_service_1.PrismaService])
+    __metadata("design:paramtypes", [prisma_service_1.PrismaService,
+        mail_service_1.MailService])
 ], PayslipsService);
 //# sourceMappingURL=payslips.service.js.map

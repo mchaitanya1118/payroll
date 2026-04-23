@@ -112,6 +112,7 @@ let UploadService = class UploadService {
                 const riderIdRaw = this.getCol(row, ['rider id', 'id', 'riderid', 'pilot id', 'emp id'], mapping?.riderId);
                 const nameRaw = this.getCol(row, ['name', 'rider name', 'pilot name', 'rider'], mapping?.riderName);
                 const vehicleRaw = this.getCol(row, ['vehicle type', 'vehicle', 'type'], mapping?.vehicleType);
+                const emailRaw = this.getCol(row, ['email', 'rider email', 'mail'], mapping?.email);
                 const companyRaw = this.getCol(row, ['company', 'company code'], mapping?.companyCode);
                 if (!riderIdRaw && !nameRaw)
                     continue;
@@ -135,9 +136,16 @@ let UploadService = class UploadService {
                             tenantId,
                             riderId: riderIdentifier,
                             riderName: nameRaw ? String(nameRaw) : riderIdentifier,
+                            email: emailRaw ? String(emailRaw).trim().toLowerCase() : null,
                             vehicleType: (String(vehicleRaw).toUpperCase() === 'CAR' ? 'CAR' : 'BIKE'),
                             companyCode: companyRaw ? String(companyRaw).trim() : null,
                         }
+                    });
+                }
+                else if (rider && emailRaw && !rider.email) {
+                    rider = await this.prisma.rider.update({
+                        where: { id: rider.id },
+                        data: { email: String(emailRaw).trim().toLowerCase() }
                     });
                 }
                 if (riderIdentifier) {

@@ -37,6 +37,12 @@ let PayslipsController = class PayslipsController {
     async generateAll(req, month, year) {
         return this.payslipsService.generateAllPayslips(req.user.tenantId, parseInt(month), parseInt(year));
     }
+    async sendEmail(id) {
+        return this.payslipsService.sendPayslipEmail(id);
+    }
+    async sendAllEmails(req, month, year) {
+        return this.payslipsService.sendBulkEmails(req.user.tenantId, parseInt(month), parseInt(year));
+    }
 };
 exports.PayslipsController = PayslipsController;
 __decorate([
@@ -86,6 +92,22 @@ __decorate([
     __metadata("design:paramtypes", [Object, Object, Object]),
     __metadata("design:returntype", Promise)
 ], PayslipsController.prototype, "generateAll", null);
+__decorate([
+    (0, common_1.Post)(':id/send-email'),
+    __param(0, (0, common_1.Param)('id')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", Promise)
+], PayslipsController.prototype, "sendEmail", null);
+__decorate([
+    (0, common_1.Post)('send-all-emails'),
+    __param(0, (0, common_1.Request)()),
+    __param(1, (0, common_1.Body)('month')),
+    __param(2, (0, common_1.Body)('year')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object, Object, Object]),
+    __metadata("design:returntype", Promise)
+], PayslipsController.prototype, "sendAllEmails", null);
 exports.PayslipsController = PayslipsController = __decorate([
     (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
     (0, common_1.Controller)('payslips'),

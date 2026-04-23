@@ -1,7 +1,18 @@
 import { PrismaService } from '../prisma/prisma.service';
+import { MailService } from '../mail/mail.service';
 export declare class PayslipsService {
     private readonly prisma;
-    constructor(prisma: PrismaService);
+    private readonly mailService;
+    constructor(prisma: PrismaService, mailService: MailService);
+    sendPayslipEmail(id: string): Promise<{
+        success: boolean;
+    }>;
+    sendBulkEmails(tenantId: string, month: number, year: number): Promise<{
+        total: number;
+        sent: number;
+        failed: number;
+        errors: string[];
+    }>;
     getDashboard(tenantId: string, month: number, year: number, search?: string): Promise<{
         slips: never[];
         summary: {
@@ -42,7 +53,6 @@ export declare class PayslipsService {
             companyCode: string | null;
         };
     } & {
-        netTotal: number;
         id: string;
         month: number;
         year: number;
@@ -59,6 +69,7 @@ export declare class PayslipsService {
         bankDeduction: number;
         deductions: number;
         bonus: number;
+        netTotal: number;
         grossRevenue: number;
         createdAt: Date;
         updatedAt: Date;
@@ -82,7 +93,6 @@ export declare class PayslipsService {
                 companyCode: string | null;
             };
         } & {
-            netTotal: number;
             id: string;
             month: number;
             year: number;
@@ -99,6 +109,7 @@ export declare class PayslipsService {
             bankDeduction: number;
             deductions: number;
             bonus: number;
+            netTotal: number;
             grossRevenue: number;
             createdAt: Date;
             updatedAt: Date;
@@ -147,7 +158,6 @@ export declare class PayslipsService {
             companyCode: string | null;
         };
     } & {
-        netTotal: number;
         id: string;
         month: number;
         year: number;
@@ -164,6 +174,7 @@ export declare class PayslipsService {
         bankDeduction: number;
         deductions: number;
         bonus: number;
+        netTotal: number;
         grossRevenue: number;
         createdAt: Date;
         updatedAt: Date;
@@ -181,7 +192,6 @@ export declare class PayslipsService {
             companyCode: string | null;
         };
     } & {
-        netTotal: number;
         id: string;
         month: number;
         year: number;
@@ -198,6 +208,7 @@ export declare class PayslipsService {
         bankDeduction: number;
         deductions: number;
         bonus: number;
+        netTotal: number;
         grossRevenue: number;
         createdAt: Date;
         updatedAt: Date;

@@ -1,9 +1,73 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { MailService } from '../mail/mail.service';
 
 @Injectable()
 export class PayslipsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly mailService: MailService,
+  ) {}
+
+  async sendPayslipEmail(id: string) {
+    const payslip = await this.prisma.payslip.findUnique({
+      where: { id },
+      include: { rider: true },
+    });
+
+    if (!payslip) throw new NotFoundException('Payslip not found');
+    if (!payslip.rider.email) {
+      throw new BadRequestException(`Rider ${payslip.rider.riderName} does not have an email associated.`);
+    }
+
+    return this.mailService.sendPayslipEmail(
+      payslip.rider.email,
+      payslip.rider.riderName,
+      payslip.month,
+      payslip.year,
+      {
+        grossAmount: payslip.grossAmount,
+        deductions: payslip.deductions + payslip.salesCash + payslip.carRent + payslip.akama + payslip.fine + payslip.bankDeduction,
+        netTotal: payslip.netTotal,
+      },
+    );
+  }
+
+  async sendBulkEmails(tenantId: string, month: number, year: number) {
+    const slips = await this.prisma.payslip.findMany({
+      where: { tenantId, month, year, rider: { email: { not: null } } },
+      include: { rider: true },
+    });
+
+    const results = {
+      total: slips.length,
+      sent: 0,
+      failed: 0,
+      errors: [] as string[],
+    };
+
+    for (const slip of slips) {
+      try {
+        await this.mailService.sendPayslipEmail(
+          slip.rider.email!,
+          slip.rider.riderName,
+          slip.month,
+          slip.year,
+          {
+            grossAmount: slip.grossAmount,
+            deductions: slip.deductions + slip.salesCash + slip.carRent + slip.akama + slip.fine + slip.bankDeduction,
+            netTotal: slip.netTotal,
+          },
+        );
+        results.sent++;
+      } catch (error) {
+        results.failed++;
+        results.errors.push(`Failed for ${slip.rider.riderName}: ${error.message}`);
+      }
+    }
+
+    return results;
+  }
 
   async getDashboard(
     tenantId: string,

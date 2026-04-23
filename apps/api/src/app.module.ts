@@ -12,6 +12,7 @@ import { UploadModule } from './upload/upload.module';
 import { RatesModule } from './rates/rates.module';
 import { ReportsController } from './reports/reports.controller';
 import { ReportsService } from './reports/reports.service';
+import { MailModule } from './mail/mail.module';
 
 @Module({
   imports: [
@@ -23,6 +24,7 @@ import { ReportsService } from './reports/reports.service';
     PayslipsModule,
     UploadModule,
     RatesModule,
+    MailModule,
   ],
   controllers: [AppController, ReportsController],
   providers: [AppService, PrismaService, ReportsService],

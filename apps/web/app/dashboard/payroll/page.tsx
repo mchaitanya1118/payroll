@@ -109,6 +109,33 @@ export default function PayrollPage() {
     }
   };
 
+  const [sendingEmails, setSendingEmails] = useState(false);
+  const handleSendAllEmails = async () => {
+    if (!confirm('Send payslips to ALL riders with registered email addresses?')) return;
+    try {
+      setSendingEmails(true);
+      const res = await api.post('/payslips/send-all-emails', { month, year });
+      toast.success(`Successfully sent ${res.data.sent} emails! ${res.data.failed} failed.`);
+      if (res.data.errors.length > 0) {
+        console.error('Email errors:', res.data.errors);
+      }
+    } catch (error) {
+      toast.error('Failed to initiate bulk email process');
+    } finally {
+      setSendingEmails(false);
+    }
+  };
+
+  const handleSendSingleEmail = async (slipId: string) => {
+    try {
+      await api.post(`/payslips/${slipId}/send-email`);
+      toast.success('Email sent successfully!');
+    } catch (error: any) {
+      const msg = error.response?.data?.message || 'Failed to send email';
+      toast.error(msg);
+    }
+  };
+
   useEffect(() => {
     const timer = setTimeout(() => {
         fetchDashboard();
@@ -160,6 +187,14 @@ export default function PayrollPage() {
             >
                 {generating ? <Loader2 className="animate-spin mr-2" size={14} /> : <Calculator className="mr-2" size={14} />}
                 {generating ? 'GENERATING...' : 'SYNC ALL'}
+            </Button>
+            <Button 
+                onClick={handleSendAllEmails} 
+                disabled={sendingEmails || !dashboardData?.slips?.length}
+                className="flex-1 lg:flex-none bg-slate-900 hover:bg-slate-800 text-white font-black text-[10px] tracking-widest uppercase h-10 px-6 rounded-xl shadow-lg transition-all active:scale-95 disabled:opacity-50"
+            >
+                {sendingEmails ? <Loader2 className="animate-spin mr-2" size={14} /> : <FileText className="mr-2" size={14} />}
+                {sendingEmails ? 'SENDING...' : 'BULK EMAIL'}
             </Button>
             <Button 
                 variant="outline"
@@ -296,12 +331,24 @@ export default function PayrollPage() {
                     {formatCurrency(slip.netTotal)}
                   </TableCell>
                   <TableCell className="text-right px-8">
-                    <Button 
-                      onClick={() => setSelectedRiderId(slip.rider.id)}
-                      className="bg-white border-2 border-slate-900 text-slate-900 hover:bg-slate-900 hover:text-white font-black text-[10px] tracking-widest uppercase h-9 px-4 rounded-xl transition-all hover:scale-105 active:scale-95 shadow-md hover:shadow-lg"
-                    >
-                      <FileText size={14} className="mr-2" /> VIEW SLIP
-                    </Button>
+                    <div className="flex justify-end gap-2">
+                        <Button 
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleSendSingleEmail(slip.id)}
+                            className={`h-9 w-9 p-0 rounded-xl transition-all hover:scale-105 active:scale-95 ${!slip.rider.email ? 'text-slate-200 cursor-not-allowed' : 'text-slate-600 hover:text-slate-900 border border-slate-200'}`}
+                            title={slip.rider.email ? `Email to ${slip.rider.email}` : 'No email registered'}
+                            disabled={!slip.rider.email}
+                        >
+                            <FileText size={16} />
+                        </Button>
+                        <Button 
+                        onClick={() => setSelectedRiderId(slip.rider.id)}
+                        className="bg-white border-2 border-slate-900 text-slate-900 hover:bg-slate-900 hover:text-white font-black text-[10px] tracking-widest uppercase h-9 px-4 rounded-xl transition-all hover:scale-105 active:scale-95 shadow-md hover:shadow-lg"
+                        >
+                        VIEW SLIP
+                        </Button>
+                    </div>
                   </TableCell>
                 </TableRow>
               ))}

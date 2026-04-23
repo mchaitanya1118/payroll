@@ -66,4 +66,18 @@ export class PayslipsController {
   ) {
     return this.payslipsService.generateAllPayslips(req.user.tenantId, parseInt(month), parseInt(year));
   }
+
+  @Post(':id/send-email')
+  async sendEmail(@Param('id') id: string) {
+    return this.payslipsService.sendPayslipEmail(id);
+  }
+
+  @Post('send-all-emails')
+  async sendAllEmails(
+    @Request() req: any,
+    @Body('month') month: any,
+    @Body('year') year: any
+  ) {
+    return this.payslipsService.sendBulkEmails(req.user.tenantId, parseInt(month), parseInt(year));
+  }
 }

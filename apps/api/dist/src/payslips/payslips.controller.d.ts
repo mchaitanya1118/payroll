@@ -169,4 +169,13 @@ export declare class PayslipsController {
         count: number;
         message: string;
     }>;
+    sendEmail(id: string): Promise<{
+        success: boolean;
+    }>;
+    sendAllEmails(req: any, month: any, year: any): Promise<{
+        total: number;
+        sent: number;
+        failed: number;
+        errors: string[];
+    }>;
 }

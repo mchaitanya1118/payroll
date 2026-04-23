@@ -27,6 +27,11 @@ services:
       - POSTGRES_DB=${POSTGRES_DB:-neqtra_payroll}
       - DATABASE_URL=postgresql://${POSTGRES_USER:-user}:${POSTGRES_PASSWORD:-password}@db:5432/${POSTGRES_DB:-neqtra_payroll}?schema=public
       - JWT_SECRET=${JWT_SECRET:-super_secret_jwt_key_neqtra}
+      - SMTP_HOST=${SMTP_HOST:-smtp.gmail.com}
+      - SMTP_PORT=${SMTP_PORT:-587}
+      - SMTP_USER=${SMTP_USER:-your-email@gmail.com}
+      - SMTP_PASS=${SMTP_PASS:-your-app-password}
+      - SMTP_FROM=${SMTP_FROM:-Neqtra Payroll <your-email@gmail.com>}
     ports:
       - "4000:4000"
 

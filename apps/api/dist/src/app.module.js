@@ -21,6 +21,7 @@ const upload_module_1 = require("./upload/upload.module");
 const rates_module_1 = require("./rates/rates.module");
 const reports_controller_1 = require("./reports/reports.controller");
 const reports_service_1 = require("./reports/reports.service");
+const mail_module_1 = require("./mail/mail.module");
 let AppModule = class AppModule {
 };
 exports.AppModule = AppModule;
@@ -35,6 +36,7 @@ exports.AppModule = AppModule = __decorate([
             payslips_module_1.PayslipsModule,
             upload_module_1.UploadModule,
             rates_module_1.RatesModule,
+            mail_module_1.MailModule,
         ],
         controllers: [app_controller_1.AppController, reports_controller_1.ReportsController],
         providers: [app_service_1.AppService, prisma_service_1.PrismaService, reports_service_1.ReportsService],
