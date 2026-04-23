@@ -45,7 +45,7 @@ async function handleRequest(request: NextRequest, pathParts: string[]) {
       cache: 'no-store',
     });
 
-    const data = await response.text();
+    const data = await response.arrayBuffer();
     
     console.log(`[Proxy] Response from ${targetUrl}: ${response.status}`);
 
