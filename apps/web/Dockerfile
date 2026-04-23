@@ -6,14 +6,11 @@ WORKDIR /app
 # Copy root package.json and monorepo files
 COPY package.json package-lock.json ./
 COPY apps/web/package.json ./apps/web/
-# If the frontend relies on anything in packages/ add it here, e.g.:
-# COPY packages ./packages/
+# Copy all source files
+COPY . .
 
 # Install dependencies (including those for the monorepo)
 RUN npm install --include=dev
-
-# Copy source
-COPY apps/web ./apps/web
 
 # Build the Next.js app
 WORKDIR /app/apps/web
