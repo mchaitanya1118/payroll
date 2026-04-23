@@ -10,7 +10,7 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
-import { FileText, Calculator, CheckCircle, Search, Users, Upload, Trash2, Loader2 } from 'lucide-react';
+import { FileText, Calculator, CheckCircle2, Search, Users, Upload, Trash2, Loader2 } from 'lucide-react';
 import { toTitleCase } from '@/lib/format';
 import RiderPayslipView from './RiderPayslipView';
 import { formatCurrency } from '@/lib/format';
@@ -194,23 +194,21 @@ export default function PayrollPage() {
       </div>
 
         {/* Summary Stat Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 w-full mb-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 w-full mb-8">
             {[
               { label: 'Total Payout', icon: Calculator, color: 'bg-emerald-500', value: formatCurrency(dashboardData?.summary?.totalPayout || 0) },
               { label: 'Active Riders', icon: Users, color: 'bg-blue-500', value: dashboardData?.summary?.totalRiders || 0 },
-              { label: 'Slips Finalized', icon: CheckCircle, color: 'bg-amber-500', value: dashboardData?.summary?.completed || 0 },
+              { label: 'Slips Finalized', icon: CheckCircle2, color: 'bg-amber-500', value: dashboardData?.summary?.completed || 0 },
               { label: 'Avg Payout', icon: FileText, color: 'bg-purple-500', value: formatCurrency((dashboardData?.summary?.totalPayout || 0) / (dashboardData?.summary?.totalRiders || 1)) },
             ].map((stat, i) => (
-              <div key={i} className="flex items-center gap-4 bg-white/60 p-5 rounded-2xl border border-white transition-all hover:scale-[1.02] hover:shadow-xl shadow-slate-200/50 backdrop-blur-md">
-                <div className={`p-3 ${stat.color}/10 rounded-2xl border border-${stat.color.split('-')[1]}-500/10`}>
-                    <stat.icon className={`text-${stat.color.split('-')[1]}-600`} size={24} />
+              <div key={i} className="flex items-center gap-4 bg-white/40 p-4 rounded-2xl border border-white/60 shadow-sm transition-all hover:scale-[1.02]">
+                <div className={`p-2.5 ${stat.color}/10 rounded-xl`}>
+                    <stat.icon className={`text-${stat.color.split('-')[1]}-600`} size={20} />
                 </div>
                 <div className="flex flex-col overflow-hidden">
-                    <span className="text-[10px] font-black uppercase text-slate-400 tracking-[0.2em] leading-none mb-2 italic">
-                      {stat.label}
-                    </span>
+                    <span className="text-[10px] font-black uppercase text-slate-400 tracking-[0.1em] leading-none mb-1">{stat.label}</span>
                     <span className="text-xl font-black text-slate-900 leading-none truncate">
-                        {loading ? <Skeleton className="h-5 w-24 mt-1" /> : stat.value}
+                        {loading ? <Skeleton className="h-5 w-20 mt-1" /> : stat.value}
                     </span>
                 </div>
               </div>
@@ -218,13 +216,13 @@ export default function PayrollPage() {
         </div>
 
         {/* Filters Bar */}
-        <div className="flex flex-col md:flex-row gap-4 items-end glass-card p-4 md:p-6 rounded-2xl mb-8 premium-shadow border border-white">
+        <div className="flex flex-col md:flex-row gap-4 items-end glass-card p-6 rounded-2xl mb-8 premium-shadow">
             <div className="flex-1 space-y-2 w-full">
-                <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest pl-1">Search Ecosystem</Label>
+                <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest pl-1">Search Rider</Label>
                 <div className="relative">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={14} />
                     <Input 
-                        placeholder="Search pilot identity..." 
+                        placeholder="Search name or ID..." 
                         className="pl-9 input-premium h-11 rounded-xl"
                         value={search}
                         onChange={(e) => setSearch(e.target.value)}
@@ -232,27 +230,27 @@ export default function PayrollPage() {
                 </div>
             </div>
             
-            <div className="grid grid-cols-2 gap-3 w-full md:w-auto">
+            <div className="grid grid-cols-2 gap-4 w-full md:w-auto">
               <div className="space-y-2">
-                  <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest pl-1">Month</Label>
+                  <Label className="text-[10px] font-bold uppercase text-slate-400 tracking-wider pl-1">Month</Label>
                   <Select value={month.toString()} onValueChange={(v) => v && setMonth(+v)}>
                     <SelectTrigger className="h-11 bg-slate-50 border-slate-200 font-bold rounded-xl md:w-36">
                       <SelectValue placeholder="Month" />
                     </SelectTrigger>
                     <SelectContent className="rounded-xl border-slate-100">
-                      {months.map(m => <SelectItem key={m.value} value={m.value.toString()} className="font-bold">{m.label}</SelectItem>)}
+                      {months.map(m => <SelectItem key={m.value} value={m.value.toString()} className="font-medium">{m.label}</SelectItem>)}
                     </SelectContent>
                   </Select>
               </div>
 
               <div className="space-y-2">
-                  <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest pl-1">Year</Label>
+                  <Label className="text-[10px] font-bold uppercase text-slate-400 tracking-wider pl-1">Year</Label>
                   <Select value={year.toString()} onValueChange={(v) => v && setYear(+v)}>
                     <SelectTrigger className="h-11 bg-slate-50 border-slate-200 font-bold rounded-xl md:w-28">
                       <SelectValue placeholder="Year" />
                     </SelectTrigger>
                     <SelectContent className="rounded-xl border-slate-100">
-                      {[2024, 2025, 2026].map(y => <SelectItem key={y} value={y.toString()} className="font-bold">{y}</SelectItem>)}
+                      {[2024, 2025, 2026].map(y => <SelectItem key={y} value={y.toString()} className="font-medium">{y}</SelectItem>)}
                     </SelectContent>
                   </Select>
               </div>
@@ -264,11 +262,11 @@ export default function PayrollPage() {
           <Table className="min-w-[800px]">
             <TableHeader>
               <TableRow className="bg-slate-900/5 hover:bg-slate-900/5 border-b border-slate-200/60 h-14">
-                <TableHead className="w-32 font-black text-slate-950 text-center tracking-[0.2em] text-[10px] uppercase italic">PILOT ID</TableHead>
-                <TableHead className="font-black text-slate-950 tracking-[0.2em] text-[10px] uppercase italic">FULL IDENTITY</TableHead>
-                <TableHead className="font-black text-slate-950 text-right tracking-[0.2em] text-[10px] uppercase italic">GROSS EARNINGS</TableHead>
-                <TableHead className="font-black text-slate-950 text-right tracking-[0.2em] text-[10px] uppercase italic">NET DISBURSEMENT</TableHead>
-                <TableHead className="text-right font-black text-slate-950 tracking-[0.2em] text-[10px] uppercase italic px-10">ACTION</TableHead>
+                <TableHead className="w-32 font-black text-slate-900 text-center tracking-widest text-[10px] uppercase">RIDER ID</TableHead>
+                <TableHead className="font-black text-slate-900 tracking-widest text-[10px] uppercase">PILOT NAME</TableHead>
+                <TableHead className="font-black text-slate-900 text-right tracking-widest text-[10px] uppercase">GROSS AMOUNT</TableHead>
+                <TableHead className="font-black text-slate-900 text-right tracking-widest text-[10px] uppercase">NET PAYOUT</TableHead>
+                <TableHead className="text-right font-black text-slate-900 tracking-widest text-[10px] uppercase px-8">ACTION</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -286,31 +284,31 @@ export default function PayrollPage() {
                 <TableRow key={slip.id} className="group hover:bg-emerald-50/40 transition-all duration-300 h-16 border-b border-slate-100/60">
                   <TableCell className="font-black text-slate-400 text-center tabular-nums">{slip.rider.riderId}</TableCell>
                   <TableCell>
-                    <div className="font-bold text-slate-950 tabular-nums tracking-tight mb-1">{toTitleCase(slip.rider.riderName)}</div>
-                    <Badge variant="outline" className="text-[8px] text-slate-400 uppercase font-black tracking-widest px-2 h-4 border-slate-200 bg-white/80 rounded-md">
-                      {slip.rider.vehicleType} FLEET
+                    <div className="font-bold text-slate-900 tabular-nums tracking-tight mb-1">{toTitleCase(slip.rider.riderName)}</div>
+                    <Badge variant="outline" className="text-[9px] text-slate-400 uppercase font-black tracking-widest px-1.5 h-4 border-slate-200 bg-white">
+                      {slip.rider.vehicleType}
                     </Badge>
                   </TableCell>
                   <TableCell className="text-right font-bold text-slate-500 tabular-nums">
                     {formatCurrency(slip.grossAmount)}
                   </TableCell>
-                  <TableCell className="text-right font-black text-emerald-600 tabular-nums text-lg md:text-xl">
+                  <TableCell className="text-right font-black text-emerald-600 tabular-nums text-lg">
                     {formatCurrency(slip.netTotal)}
                   </TableCell>
-                  <TableCell className="text-right px-10">
+                  <TableCell className="text-right px-8">
                     <Button 
                       onClick={() => setSelectedRiderId(slip.rider.id)}
-                      className="bg-white border-2 border-slate-900 text-slate-900 hover:bg-slate-900 hover:text-white font-black text-[10px] tracking-[0.15em] uppercase h-10 px-5 rounded-xl transition-all hover:scale-105 active:scale-95 shadow-md hover:shadow-xl group"
+                      className="bg-white border-2 border-slate-900 text-slate-900 hover:bg-slate-900 hover:text-white font-black text-[10px] tracking-widest uppercase h-9 px-4 rounded-xl transition-all hover:scale-105 active:scale-95 shadow-md hover:shadow-lg"
                     >
-                      <FileText size={14} className="mr-2 group-hover:rotate-12 transition-transform" /> VIEW AUDIT
+                      <FileText size={14} className="mr-2" /> VIEW SLIP
                     </Button>
                   </TableCell>
                 </TableRow>
               ))}
               {(!loading && (!dashboardData?.slips || dashboardData.slips.length === 0)) && (
                 <TableRow>
-                  <TableCell colSpan={5} className="text-center py-24 text-slate-400 italic font-black uppercase tracking-[0.2em] opacity-40">
-                    {search ? `Match failure for "${search}"` : "Zero records for this cycle."}
+                  <TableCell colSpan={5} className="text-center py-20 text-slate-400 italic font-medium">
+                    {search ? `No results found for "${search}"` : "No payroll data found for this month."}
                   </TableCell>
                 </TableRow>
               )}

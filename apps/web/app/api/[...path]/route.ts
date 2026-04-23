@@ -1,7 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-export const dynamic = 'force-dynamic';
-
 export async function GET(request: NextRequest, props: { params: Promise<{ path: string[] }> }) {
   const params = await props.params;
   return handleRequest(request, params.path);
@@ -45,7 +43,7 @@ async function handleRequest(request: NextRequest, pathParts: string[]) {
       cache: 'no-store',
     });
 
-    const data = await response.arrayBuffer();
+    const data = await response.text();
     
     console.log(`[Proxy] Response from ${targetUrl}: ${response.status}`);
 

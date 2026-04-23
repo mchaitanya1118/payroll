@@ -1,31 +1,27 @@
 # Use Node.js base image
-FROM node:22-slim AS builder
-
-# Add essential build tools for Debian
-RUN apt-get update && apt-get install -y python3 make g++ && rm -rf /var/lib/apt/lists/*
+FROM node:22-alpine AS builder
 
 WORKDIR /app
 
-# Copy lockfile and ALL package definitions for workspace resolution
+# Copy root package.json and monorepo files
 COPY package.json package-lock.json ./
-COPY apps/ ./apps/
-COPY packages/ ./packages/
-RUN find apps packages -type f ! -name "package.json" -delete
+COPY apps/web/package.json ./apps/web/
+# If the frontend relies on anything in packages/ add it here, e.g.:
+# COPY packages ./packages/
 
-# Install dependencies (ensuring devDependencies are included despite environment settings)
-ENV NODE_ENV=development
+# Install dependencies (including those for the monorepo)
 RUN npm install --include=dev
 
-# Copy the rest of the source
-COPY . .
+# Copy source
+COPY apps/web ./apps/web
 
-# Build the web app directly in its workspace to ensure correct local resolution
+# Build the Next.js app
 WORKDIR /app/apps/web
 ENV INTERNAL_API_URL=http://api:4000
 RUN npm run build
 
 # Production image
-FROM node:22-slim AS runner
+FROM node:22-alpine AS runner
 
 WORKDIR /app
 
