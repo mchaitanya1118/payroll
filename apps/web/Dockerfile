@@ -19,9 +19,9 @@ RUN npm install --include=dev
 COPY . .
 
 # Build the Next.js app
-WORKDIR /app/apps/web
+WORKDIR /app
 ENV INTERNAL_API_URL=http://api:4000
-RUN npm run build
+RUN npm run build -w apps/web || (cd apps/web && ls -la && npm list next && npm run build --verbose)
 
 # Production image
 FROM node:22-alpine AS runner
