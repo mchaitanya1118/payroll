@@ -10,7 +10,8 @@ COPY apps/api/package.json ./apps/api/
 # Install build dependencies for native modules like bcrypt
 RUN apk add --no-cache python3 make g++
 
-# Install dependencies (including those for the monorepo)
+# Install dependencies (ensuring devDependencies are included despite environment settings)
+ENV NODE_ENV=development
 RUN npm install --include=dev
 
 # Copy source and prisma

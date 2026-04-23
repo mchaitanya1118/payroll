@@ -11,7 +11,8 @@ COPY package.json package-lock.json ./
 COPY apps/web/package.json ./apps/web/
 COPY apps/api/package.json ./apps/api/
 
-# Install dependencies
+# Install dependencies (ensuring devDependencies are included despite environment settings)
+ENV NODE_ENV=development
 RUN npm install --include=dev
 
 # Copy the rest of the source
