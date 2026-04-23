@@ -38,7 +38,9 @@ export default function LoginPage() {
       toast.success('Welcome back!');
       router.replace('/dashboard');
     } catch (error: any) {
-      toast.error(error.response?.data?.message || 'Login failed');
+      console.error('Login error:', error);
+      const message = error.response?.data?.message || error.message || 'Login failed';
+      toast.error(message);
     } finally {
       setLoading(false);
     }
