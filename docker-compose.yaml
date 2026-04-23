@@ -21,7 +21,6 @@ services:
     depends_on:
       - db
     environment:
-      - NODE_ENV=${NODE_ENV:-production}
       - PORT=${API_PORT:-4000}
       - POSTGRES_USER=${POSTGRES_USER:-user}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-password}
@@ -39,7 +38,6 @@ services:
     depends_on:
       - api
     environment:
-      - NODE_ENV=${NODE_ENV:-production}
       - PORT=${WEB_PORT:-3000}
       - INTERNAL_API_URL=${INTERNAL_API_URL:-http://api:4000}
     ports:

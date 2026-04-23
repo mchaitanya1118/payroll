@@ -10,7 +10,7 @@ COPY apps/web/package.json ./apps/web/
 # COPY packages ./packages/
 
 # Install dependencies (including those for the monorepo)
-RUN npm install
+RUN npm install --include=dev
 
 # Copy source
 COPY apps/web ./apps/web

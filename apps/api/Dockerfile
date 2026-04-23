@@ -8,7 +8,7 @@ COPY package.json package-lock.json ./
 COPY apps/api/package.json ./apps/api/
 
 # Install dependencies (including those for the monorepo)
-RUN npm install
+RUN npm install --include=dev
 
 # Copy source and prisma
 COPY apps/api ./apps/api
