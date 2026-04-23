@@ -36,4 +36,4 @@ COPY --from=builder /app/apps/api/prisma ./prisma
 
 EXPOSE 4000
 
-CMD ["npm", "run", "start:prod"]
+CMD ["sh", "-c", "sleep 15 && npm run start:prod"]
