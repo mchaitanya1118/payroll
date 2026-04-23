@@ -1,8 +1,8 @@
 # Use Node.js base image
-FROM node:22-alpine AS builder
+FROM node:22-slim AS builder
 
-# Add compatibility for modern build tools and native modules
-RUN apk add --no-cache libc6-compat python3 make g++
+# Add essential build tools for Debian
+RUN apt-get update && apt-get install -y python3 make g++ && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
@@ -19,13 +19,13 @@ RUN npm install --include=dev
 # Copy the rest of the source
 COPY . .
 
-# Build the Next.js app with verbose error reporting
-WORKDIR /app
+# Build the web app directly in its workspace to ensure correct local resolution
+WORKDIR /app/apps/web
 ENV INTERNAL_API_URL=http://api:4000
-RUN npm run build -w apps/web > build_output.log 2>&1 || (cat build_output.log && exit 1)
+RUN npm run build
 
 # Production image
-FROM node:22-alpine AS runner
+FROM node:22-slim AS runner
 
 WORKDIR /app
 
