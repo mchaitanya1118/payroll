@@ -61,6 +61,59 @@ async function main() {
   }
 
   console.log('Seed data created successfully');
+
+  // Add dummy daily entries and a payslip for the current month for the first rider
+  const currentMonth = new Date().getMonth() + 1;
+  const currentYear = new Date().getFullYear();
+  
+  const firstRider = await prisma.rider.findFirst({ where: { tenantId: tenant.id } });
+  const firstBatch = await prisma.batch.findFirst({ where: { tenantId: tenant.id } });
+
+  if (firstRider && firstBatch) {
+    const date = new Date();
+    date.setUTCHours(0, 0, 0, 0);
+
+    await prisma.dailyEntry.upsert({
+      where: { riderId_date: { riderId: firstRider.id, date } },
+      update: {},
+      create: {
+        date,
+        riderId: firstRider.id,
+        batchId: firstBatch.id,
+        singleOrders: 25,
+        doubleOrders: 5,
+        autoRateSingle: 10,
+        autoRateDouble: 15,
+        dailyAmount: 325,
+        payrollMonth: currentMonth,
+        payrollYear: currentYear,
+      },
+    });
+
+    await prisma.payslip.upsert({
+      where: {
+        tenantId_riderId_month_year: {
+          tenantId: tenant.id,
+          riderId: firstRider.id,
+          month: currentMonth,
+          year: currentYear,
+        },
+      },
+      update: {},
+      create: {
+        tenantId: tenant.id,
+        riderId: firstRider.id,
+        month: currentMonth,
+        year: currentYear,
+        status: 'DRAFT',
+        grossAmount: 325,
+        netTotal: 325,
+        totalSingleOrders: 25,
+        totalDoubleOrders: 5,
+      },
+    });
+    console.log('Sample payroll data created');
+  }
 }
 
 main()

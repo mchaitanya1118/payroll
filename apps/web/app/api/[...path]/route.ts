@@ -36,12 +36,17 @@ async function handleRequest(request: NextRequest, pathParts: string[]) {
     headers.delete('host'); // Let fetch set the correct host header for the internal network
     headers.set('Connection', 'keep-alive');
 
-    const response = await fetch(targetUrl, {
+    const fetchOptions: RequestInit = {
       method: request.method,
       headers: headers,
-      body: body,
       cache: 'no-store',
-    });
+    };
+
+    if (body) {
+      fetchOptions.body = body;
+    }
+
+    const response = await fetch(targetUrl, fetchOptions);
 
     const data = await response.arrayBuffer();
     
