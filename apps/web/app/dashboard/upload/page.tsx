@@ -3,10 +3,12 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { UploadCloud, CheckCircle2, AlertCircle, FileSpreadsheet, Loader2 } from 'lucide-react';
+import { UploadCloud, CheckCircle2, AlertCircle, FileSpreadsheet, Loader2, ShieldCheck } from 'lucide-react';
 import { toast } from 'sonner';
 import api from '@/lib/api';
 import ColumnMapper from '@/components/upload/ColumnMapper';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Label } from '@/components/ui/label';
 
 export default function UploadPage() {
   const [file, setFile] = useState<File | null>(null);
@@ -90,47 +92,55 @@ export default function UploadPage() {
 
   return (
     <div className="space-y-6 max-w-4xl mx-auto">
-      <div className="flex justify-between items-end">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-white/40 backdrop-blur-xl p-6 rounded-3xl premium-shadow border border-white/60">
         <div className="space-y-1">
-          <h2 className="text-2xl font-black text-slate-900 tracking-tight uppercase">Data Ingestion Engine</h2>
-          <p className="text-sm text-slate-500">Transform raw Excel files into structured payroll entries.</p>
+          <h2 className="text-2xl md:text-3xl font-black text-slate-900 tracking-tight uppercase italic flex items-center gap-3">
+            <UploadCloud className="text-blue-500 shrink-0" size={32} />
+            Data Ingestion
+          </h2>
+          <p className="text-xs md:text-sm text-slate-500 font-medium leading-relaxed">Transform raw Excel files into structured system entries.</p>
         </div>
         {step !== 'upload' && (
-           <Button variant="ghost" size="sm" onClick={reset} className="text-slate-400 hover:text-slate-900">
-             Start Over
+           <Button variant="ghost" size="sm" onClick={reset} className="text-slate-400 hover:text-slate-900 font-black uppercase tracking-widest text-[10px] h-10 px-6 rounded-xl hover:bg-white/50 transition-all">
+             Reset Engine
            </Button>
         )}
       </div>
 
       {step === 'upload' && (
-        <Card className="border-2 border-dashed border-slate-200 hover:border-blue-400 transition-colors group">
-          <CardContent className="flex flex-col items-center justify-center p-12 text-center">
-            <div className="w-20 h-20 bg-slate-50 rounded-full flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300 shadow-inner">
-              <UploadCloud className="w-10 h-10 text-slate-400 group-hover:text-blue-500" />
+        <Card className="glass-card border-none shadow-2xl relative overflow-hidden bg-white/40 backdrop-blur-xl rounded-3xl group border border-white/60">
+          <div className="absolute top-0 right-0 p-8 opacity-5 group-hover:opacity-10 transition-opacity">
+            <FileSpreadsheet size={160} strokeWidth={1} className="text-blue-500" />
+          </div>
+          <CardContent className="flex flex-col items-center justify-center p-8 md:p-16 text-center relative z-10">
+            <div className="w-24 h-24 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-3xl flex items-center justify-center mb-8 group-hover:scale-110 transition-transform duration-500 shadow-xl shadow-blue-200">
+              <UploadCloud className="w-12 h-12 text-white" />
             </div>
-            <h3 className="text-xl font-bold mb-2">Drag & Drop your Excel file</h3>
-            <p className="text-slate-500 mb-8 max-w-sm">Accepted formats: .xlsx, .xls. We'll help you map the columns in the next step.</p>
+            <h3 className="text-2xl font-black text-slate-900 uppercase italic tracking-tight mb-2">Initialize Import</h3>
+            <p className="text-slate-500 font-medium mb-10 max-w-sm leading-relaxed">Drop your Master Excel file here. We&apos;ll auto-detect headers and assist with column mapping.</p>
             
-            <div className="flex flex-wrap gap-4 mb-8 justify-center">
+            <div className="flex flex-wrap gap-4 mb-10 justify-center">
                 <div className="text-left space-y-1.5">
-                    <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest px-1">Payroll Month</label>
-                    <select 
-                        value={month} 
-                        onChange={(e) => setMonth(parseInt(e.target.value))}
-                        className="h-10 bg-white border border-slate-200 rounded-lg px-3 text-sm font-bold shadow-sm focus:ring-2 focus:ring-blue-500 outline-none"
-                    >
-                        {months.map(m => <option key={m.value} value={m.value}>{m.label}</option>)}
-                    </select>
+                    <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest pl-1">Target Month</Label>
+                    <Select value={month.toString()} onValueChange={(v) => setMonth(parseInt(v))}>
+                        <SelectTrigger className="h-11 bg-white border-slate-200 font-bold rounded-xl w-32 md:w-40 shadow-sm focus:ring-blue-500">
+                            <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent className="rounded-xl border-slate-100">
+                            {months.map(m => <SelectItem key={m.value} value={m.value.toString()} className="font-bold">{m.label}</SelectItem>)}
+                        </SelectContent>
+                    </Select>
                 </div>
                 <div className="text-left space-y-1.5">
-                    <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest px-1">Payroll Year</label>
-                    <select 
-                        value={year} 
-                        onChange={(e) => setYear(parseInt(e.target.value))}
-                        className="h-10 bg-white border border-slate-200 rounded-lg px-3 text-sm font-bold shadow-sm focus:ring-2 focus:ring-blue-500 outline-none"
-                    >
-                        {[2024, 2025, 2026].map(y => <option key={y} value={y}>{y}</option>)}
-                    </select>
+                    <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest pl-1">Target Year</Label>
+                    <Select value={year.toString()} onValueChange={(v) => setYear(parseInt(v))}>
+                        <SelectTrigger className="h-11 bg-white border-slate-200 font-bold rounded-xl w-24 md:w-32 shadow-sm focus:ring-blue-500">
+                            <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent className="rounded-xl border-slate-100">
+                            {[2024, 2025, 2026].map(y => <SelectItem key={y} value={y.toString()} className="font-bold">{y}</SelectItem>)}
+                        </SelectContent>
+                    </Select>
                 </div>
             </div>
 
@@ -142,17 +152,14 @@ export default function UploadPage() {
               onChange={handleFileChange}
             />
             
-            <div className="flex gap-4">
-              <Button 
-                variant="outline" 
-                onClick={() => document.getElementById('excel-upload')?.click()}
-                disabled={uploading}
-                className="border-slate-200 px-8"
-              >
-                {uploading ? <Loader2 className="animate-spin mr-2" size={16} /> : <FileSpreadsheet className="mr-2" size={16} />}
-                {uploading ? "Analyzing..." : "Select Master Excel"}
-              </Button>
-            </div>
+            <Button 
+              onClick={() => document.getElementById('excel-upload')?.click()}
+              disabled={uploading}
+              className="bg-slate-900 hover:bg-black text-white h-14 rounded-2xl font-black uppercase tracking-widest text-xs px-10 transition-all active:scale-95 shadow-xl shadow-slate-900/20 group"
+            >
+              {uploading ? <Loader2 className="animate-spin mr-3" size={20} /> : <FileSpreadsheet className="mr-3 group-hover:translate-y-0.5 transition-transform" size={20} />}
+              {uploading ? "Analyzing Schema..." : "Select Source File"}
+            </Button>
           </CardContent>
         </Card>
       )}
@@ -180,18 +187,18 @@ export default function UploadPage() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-               <div className="grid grid-cols-3 gap-4">
+               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                   <div className="bg-white/60 p-4 rounded-xl border border-emerald-100 shadow-sm">
                     <p className="text-[10px] uppercase font-bold text-emerald-600 tracking-widest mb-1">Total Processed</p>
-                    <p className="text-3xl font-black text-emerald-900">{result.processed}</p>
+                    <p className="text-2xl md:text-3xl font-black text-emerald-900 leading-none">{result.processed}</p>
                   </div>
                   <div className="bg-white/60 p-4 rounded-xl border border-emerald-100 shadow-sm">
                     <p className="text-[10px] uppercase font-bold text-emerald-600 tracking-widest mb-1">New Riders</p>
-                    <p className="text-3xl font-black text-emerald-900">{result.newRiders}</p>
+                    <p className="text-2xl md:text-3xl font-black text-emerald-900 leading-none">{result.newRiders}</p>
                   </div>
                   <div className="bg-white/60 p-4 rounded-xl border border-emerald-100 shadow-sm">
                     <p className="text-[10px] uppercase font-bold text-emerald-600 tracking-widest mb-1">New Batches</p>
-                    <p className="text-3xl font-black text-emerald-900">{result.newBatches}</p>
+                    <p className="text-2xl md:text-3xl font-black text-emerald-900 leading-none">{result.newBatches}</p>
                   </div>
                </div>
                {result.newBatches > 0 && (
@@ -233,6 +240,28 @@ export default function UploadPage() {
           )}
         </div>
       )}
+      <div className="glass-card border-none shadow-xl p-8 rounded-3xl bg-gradient-to-br from-slate-900 to-slate-800 text-white relative overflow-hidden mt-8">
+        <div className="absolute top-0 right-0 w-64 h-64 bg-blue-500/10 rounded-full blur-3xl -mr-32 -mt-32"></div>
+        <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-8">
+          <div className="space-y-4">
+            <h3 className="text-2xl font-black uppercase italic tracking-tight">Need ingestion assistance?</h3>
+            <p className="text-slate-400 max-w-xl">
+              If your source file has non-standard formatting or requires complex formula mapping, our technical team can assist in schema calibration.
+            </p>
+            <div className="flex gap-4">
+              <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest bg-white/5 px-3 py-1.5 rounded-lg border border-white/10">
+                <ShieldCheck size={14} className="text-blue-500" /> Schema Guard
+              </div>
+              <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest bg-white/5 px-3 py-1.5 rounded-lg border border-white/10">
+                <FileSpreadsheet size={14} className="text-emerald-500" /> Excel V2
+              </div>
+            </div>
+          </div>
+          <Button variant="outline" className="border-white/20 text-white hover:bg-white hover:text-slate-900 font-black uppercase tracking-widest text-xs h-12 px-8 rounded-xl transition-all">
+             Contact Ops <CheckCircle2 className="ml-2" size={16} />
+          </Button>
+        </div>
+      </div>
     </div>
   );
 }

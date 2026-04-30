@@ -1,5 +1,5 @@
-import { Injectable } from '@nestjs/common';
-import { PrismaService } from '../prisma/prisma.service';
+import { Injectable } from "@nestjs/common";
+import { PrismaService } from "../prisma/prisma.service";
 
 @Injectable()
 export class RidersService {
@@ -9,11 +9,14 @@ export class RidersService {
     return this.prisma.rider.create({
       data: {
         tenantId,
-        riderId: data.rider_id,
-        riderName: data.rider_name,
-        vehicleType: data.vehicle_type === 'CAR' ? 'CAR' : 'BIKE',
-        rateType: data.rate_type || 'TARGET',
-        companyCode: data.company_code || null,
+        riderId: data.riderId || data.rider_id,
+        riderName: data.riderName || data.rider_name,
+        vehicleType:
+          (data.vehicleType || data.vehicle_type) === "CAR" ? "CAR" : "BIKE",
+        rateType: data.rateType || data.rate_type || "TARGET",
+        companyCode: data.companyCode || data.company_code || null,
+        email: data.email || null,
+        phoneNumber: data.phoneNumber || data.phone_number || null,
       },
     });
   }
@@ -30,19 +33,19 @@ export class RidersService {
 
     if (filters.search) {
       where.OR = [
-        { riderId: { contains: filters.search, mode: 'insensitive' } },
-        { riderName: { contains: filters.search, mode: 'insensitive' } },
+        { riderId: { contains: filters.search, mode: "insensitive" } },
+        { riderName: { contains: filters.search, mode: "insensitive" } },
       ];
     }
 
-    if (filters.vehicleType && filters.vehicleType !== 'ALL') {
+    if (filters.vehicleType && filters.vehicleType !== "ALL") {
       where.vehicleType = filters.vehicleType;
     }
 
-    if (filters.companyCode && filters.companyCode !== 'ALL') {
+    if (filters.companyCode && filters.companyCode !== "ALL") {
       where.companyCode = {
         contains: filters.companyCode,
-        mode: 'insensitive',
+        mode: "insensitive",
       };
     }
 
@@ -51,7 +54,7 @@ export class RidersService {
 
   async getRidersCount(tenantId: string) {
     return this.prisma.rider.count({
-      where: { tenantId }
+      where: { tenantId },
     });
   }
 
@@ -69,11 +72,16 @@ export class RidersService {
     return this.prisma.rider.update({
       where: { id, tenantId },
       data: {
-        riderName: data.rider_name,
-        vehicleType: data.vehicle_type === 'CAR' ? 'CAR' : 'BIKE',
-        rateType: data.rate_type,
-        companyCode: data.company_code || null,
-        // we omit modifying riderId to avoid integrity constraints unless specifically handled
+        riderName: data.riderName || data.rider_name,
+        vehicleType:
+          (data.vehicleType || data.vehicle_type) === "CAR" ? "CAR" : "BIKE",
+        rateType: data.rateType || data.rate_type,
+        companyCode: data.companyCode || data.company_code || null,
+        email: data.email !== undefined ? data.email : undefined,
+        phoneNumber:
+          (data.phoneNumber || data.phone_number) !== undefined
+            ? data.phoneNumber || data.phone_number
+            : undefined,
       },
     });
   }

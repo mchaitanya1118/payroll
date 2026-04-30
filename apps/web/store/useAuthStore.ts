@@ -7,6 +7,11 @@ interface User {
   name: string;
   role: 'ADMIN' | 'ACCOUNTANT';
   tenantId: string;
+  tenant?: {
+    name: string;
+    currency: string;
+    currencySymbol: string;
+  };
 }
 
 interface AuthState {
@@ -14,6 +19,7 @@ interface AuthState {
   token: string | null;
   isHydrated: boolean;
   setAuth: (user: User, token: string) => void;
+  updateUser: (user: Partial<User>) => void;
   logout: () => void;
   setHydrated: () => void;
 }
@@ -27,6 +33,11 @@ export const useAuthStore = create<AuthState>()(
       setAuth: (user, token) => {
         set({ user, token });
         localStorage.setItem('token', token);
+      },
+      updateUser: (userData) => {
+        set((state) => ({
+          user: state.user ? { ...state.user, ...userData } : null
+        }));
       },
       logout: () => {
         set({ user: null, token: null });

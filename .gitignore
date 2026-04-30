@@ -1,1 +1,17 @@
 node_modules
+dist
+.next
+.wwebjs_auth
+.wwebjs_cache
+*.log
+*.tsbuildinfo
+.env
+.env.*
+!.env.example
+.DS_Store
+web_build_*.txt
+web_lint_*.txt
+server_output.log
+api_start.log
+web_start.log
+*.xlsx

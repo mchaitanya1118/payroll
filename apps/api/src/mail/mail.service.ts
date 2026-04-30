@@ -1,5 +1,5 @@
-import { Injectable, Logger } from '@nestjs/common';
-import * as nodemailer from 'nodemailer';
+import { Injectable, Logger } from "@nestjs/common";
+import * as nodemailer from "nodemailer";
 
 @Injectable()
 export class MailService {
@@ -8,9 +8,9 @@ export class MailService {
 
   constructor() {
     this.transporter = nodemailer.createTransport({
-      host: process.env.SMTP_HOST || 'smtp.gmail.com',
-      port: parseInt(process.env.SMTP_PORT || '587'),
-      secure: process.env.SMTP_SECURE === 'true', // true for 465, false for other ports
+      host: process.env.SMTP_HOST || "smtp.gmail.com",
+      port: parseInt(process.env.SMTP_PORT || "587", 10),
+      secure: process.env.SMTP_SECURE === "true", // true for 465, false for other ports
       auth: {
         user: process.env.SMTP_USER,
         pass: process.env.SMTP_PASS,
@@ -18,9 +18,17 @@ export class MailService {
     });
   }
 
-  async sendPayslipEmail(email: string, riderName: string, month: number, year: number, payslipData: any) {
-    const monthName = new Date(year, month - 1).toLocaleString('default', { month: 'long' });
-    
+  async sendPayslipEmail(
+    email: string,
+    riderName: string,
+    month: number,
+    year: number,
+    payslipData: any,
+  ) {
+    const monthName = new Date(year, month - 1).toLocaleString("default", {
+      month: "long",
+    });
+
     const htmlContent = `
       <div style="font-family: Arial, sans-serif; color: #333; max-width: 600px; margin: 0 auto; border: 1px solid #eee; padding: 20px; border-radius: 10px;">
         <h2 style="color: #10b981; border-bottom: 2px solid #10b981; padding-bottom: 10px;">Monthly Payslip - ${monthName} ${year}</h2>
@@ -63,7 +71,10 @@ export class MailService {
       this.logger.log(`Payslip email sent successfully to ${email}`);
       return { success: true };
     } catch (error) {
-      this.logger.error(`Failed to send payslip email to ${email}`, error.stack);
+      this.logger.error(
+        `Failed to send payslip email to ${email}`,
+        error.stack,
+      );
       throw error;
     }
   }

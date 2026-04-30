@@ -4,19 +4,28 @@
  */
 
 /**
- * Formats a number as Kuwaiti Dinar (KWD) with 3 decimal places.
- * Example: 123.456 -> KWD 123.456
+ * Formats a number as Saudi Riyal (SAR) with 2 decimal places.
+ * Example: 123.45 -> SAR 123.45
  */
-export const formatCurrency = (amount: number | string): string => {
+export const formatCurrency = (
+  amount: number | string, 
+  currencyCode: string = 'SAR',
+  symbol: string = 'SAR'
+): string => {
   const numericAmount = typeof amount === 'string' ? parseFloat(amount) : amount;
-  if (isNaN(numericAmount)) return 'KWD 0.000';
+  if (isNaN(numericAmount)) return `${symbol} 0.00`;
   
-  return new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: 'KWD',
-    minimumFractionDigits: 3,
-    maximumFractionDigits: 3,
-  }).format(numericAmount);
+  try {
+    return new Intl.NumberFormat('en-SA', {
+      style: 'currency',
+      currency: currencyCode,
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    }).format(numericAmount);
+  } catch (e) {
+    // Fallback if currency code is invalid for Intl
+    return `${symbol} ${numericAmount.toFixed(2)}`;
+  }
 };
 
 /**

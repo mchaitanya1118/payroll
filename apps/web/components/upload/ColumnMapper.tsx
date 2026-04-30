@@ -5,8 +5,9 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
-import { ArrowRight, Info, AlertCircle, Calculator, Table } from 'lucide-react';
+import { ArrowRight, Info, AlertCircle, Calculator, Table, Loader2 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
+import { cn } from '@/lib/utils';
 
 interface ColumnMapperProps {
   headers: string[];
@@ -52,7 +53,6 @@ export default function ColumnMapper({ headers, sample, onConfirm, onCancel, isP
     });
 
     // Special logic for Formula Auto-Detection: Double Orders
-    // If no direct 'doubleOrders' match found, but 'Completed Dropoffs' and 'Completed Pickups' exist
     if (!initialMapping['doubleOrders']) {
       const dropoffsHeader = headers.find(h => h.toLowerCase().trim() === 'completed dropoffs');
       const pickupsHeader = headers.find(h => h.toLowerCase().trim() === 'completed pickups');
@@ -92,7 +92,7 @@ export default function ColumnMapper({ headers, sample, onConfirm, onCancel, isP
             const val = parseFloat(String(sample[colName.trim()] || 0).replace(/,/g, ''));
             return isNaN(val) ? "0" : val.toString();
         });
-        const safeExpression = expression.replace(/[^0-9\+\-\*\/\.\(\)\s]/g, '');
+        const safeExpression = expression.replace(/[^0-9+\-*/.()\s]/g, '');
         if (!safeExpression.trim()) return 0;
         return new Function(`return ${safeExpression}`)();
     } catch (e) {
@@ -112,34 +112,39 @@ export default function ColumnMapper({ headers, sample, onConfirm, onCancel, isP
   const isFormValid = FIELDS.filter(f => f.required).every(f => !!mapping[f.key]);
 
   return (
-    <Card className="border-2 border-slate-200 shadow-xl overflow-hidden">
-      <CardHeader className="bg-slate-50 border-b border-slate-200">
-        <div className="flex justify-between items-center">
-          <div>
-            <CardTitle className="text-xl font-black text-slate-900 tracking-tight uppercase">Map Excel Columns</CardTitle>
-            <CardDescription>Match your file's columns to the payroll fields.</CardDescription>
+    <Card className="glass-card border-none shadow-2xl overflow-hidden bg-white/40 backdrop-blur-xl rounded-3xl border border-white/60">
+      <CardHeader className="bg-slate-900/5 border-b border-white/40 p-6 md:p-8">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+          <div className="flex items-center gap-4">
+            <div className="h-12 w-12 rounded-2xl bg-blue-500/10 flex items-center justify-center text-blue-600 shadow-sm">
+                <Table size={24} />
+            </div>
+            <div>
+              <CardTitle className="text-xl font-black text-slate-900 tracking-tight uppercase italic leading-none mb-1">Mapping Protocol</CardTitle>
+              <CardDescription className="text-xs font-medium text-slate-500 italic">Match source Excel headers to system parameters.</CardDescription>
+            </div>
           </div>
-          <div className="bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest flex items-center gap-1.5">
-            <Info size={12} />
-            Step 2 of 2
+          <div className="bg-blue-500 text-white px-4 py-1.5 rounded-2xl text-[10px] font-black uppercase tracking-widest flex items-center gap-2 shadow-lg shadow-blue-500/20">
+            <Info size={14} />
+            Schema Validation
           </div>
         </div>
       </CardHeader>
       <CardContent className="p-0">
-        <div className="grid grid-cols-1 md:grid-cols-2 divide-x divide-slate-100">
+        <div className="grid grid-cols-1 md:grid-cols-2 divide-x divide-white/20">
            {/* Left Side: Mapping Inputs */}
-           <div className="p-6 space-y-4 max-h-[600px] overflow-y-auto">
+           <div className="p-6 space-y-4 max-h-[600px] overflow-y-auto custom-scrollbar">
              {FIELDS.map((field) => (
-                <div key={field.key} className="space-y-1.5 p-3 rounded-lg border border-transparent hover:border-slate-100 hover:bg-slate-50/50 transition-all">
+                <div key={field.key} className="space-y-2 p-4 rounded-2xl bg-white/50 border border-transparent hover:border-blue-200 hover:bg-white transition-all group">
                   <div className="flex justify-between items-center">
-                    <Label className="text-sm font-bold text-slate-700 flex items-center gap-1.5">
+                    <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400 pl-1">
                       {field.label}
-                      {field.required && <span className="text-red-500 font-black">*</span>}
+                      {field.required && <span className="text-red-500 ml-1">*</span>}
                     </Label>
                     {mapping[field.key] ? (
-                        <span className="text-[10px] text-emerald-600 font-bold bg-emerald-50 px-2 py-0.5 rounded uppercase">Connected</span>
+                        <span className="text-[9px] text-emerald-600 font-black bg-emerald-50 px-2 py-0.5 rounded-lg uppercase tracking-widest border border-emerald-100">Linked</span>
                     ) : (
-                        <span className="text-[10px] text-slate-400 font-medium">Not Mapped</span>
+                        <span className="text-[9px] text-slate-400 font-bold uppercase tracking-widest">Awaiting Map</span>
                     )}
                   </div>
                   <div className="flex gap-2">
@@ -150,14 +155,14 @@ export default function ColumnMapper({ headers, sample, onConfirm, onCancel, isP
                                     placeholder="e.g. {{Total}} - {{Single}}"
                                     value={mapping[field.key] || ""}
                                     onChange={(e) => handleSelect(field.key, e.target.value)}
-                                    className="h-10 text-xs font-mono"
+                                    className="h-11 text-xs font-mono rounded-xl border-slate-200 bg-white"
                                 />
                                 <div className="flex flex-wrap gap-1">
                                     {headers.slice(0, 8).map((h, i) => (
                                         <button 
                                             key={i} 
                                             onClick={() => handleSelect(field.key, (mapping[field.key] || "") + `{{${h}}}`)}
-                                            className="text-[9px] bg-slate-100 hover:bg-blue-100 text-slate-500 hover:text-blue-600 px-2 py-0.5 rounded border border-slate-200 transition-colors"
+                                            className="text-[9px] bg-slate-100 hover:bg-blue-100 text-slate-500 hover:text-blue-600 px-2 py-0.5 rounded-lg border border-slate-200 transition-colors font-bold uppercase tracking-widest"
                                         >
                                             + {h}
                                         </button>
@@ -169,12 +174,12 @@ export default function ColumnMapper({ headers, sample, onConfirm, onCancel, isP
                             value={mapping[field.key] || ""} 
                             onValueChange={(val) => handleSelect(field.key, val as string)}
                           >
-                            <SelectTrigger className="bg-white border-slate-200">
-                              <SelectValue placeholder={`Select column for ${field.label}...`} />
+                            <SelectTrigger className="h-11 bg-white border-slate-200 rounded-xl font-bold text-xs shadow-sm group-hover:border-blue-400 transition-colors">
+                              <SelectValue placeholder={`Assign ${field.label}...`} />
                             </SelectTrigger>
-                            <SelectContent>
+                            <SelectContent className="rounded-xl border-slate-100 shadow-2xl">
                                {headers.map((h, i) => (
-                                 <SelectItem key={i} value={h}>{h}</SelectItem>
+                                 <SelectItem key={i} value={h} className="font-bold">{h}</SelectItem>
                                ))}
                             </SelectContent>
                           </Select>
@@ -184,10 +189,13 @@ export default function ColumnMapper({ headers, sample, onConfirm, onCancel, isP
                         variant="outline" 
                         size="icon" 
                         onClick={() => toggleFormula(field.key)}
-                        className={`shrink-0 ${formulaFields.has(field.key) ? 'bg-blue-50 border-blue-200 text-blue-600' : 'text-slate-400'}`}
+                        className={cn(
+                            "shrink-0 h-11 w-11 rounded-xl transition-all",
+                            formulaFields.has(field.key) ? 'bg-blue-50 border-blue-200 text-blue-600 shadow-inner' : 'text-slate-400 border-slate-200 hover:bg-slate-50'
+                        )}
                         title={formulaFields.has(field.key) ? "Switch to Column Mode" : "Switch to Formula Mode"}
                     >
-                        {formulaFields.has(field.key) ? <Table size={16} /> : <Calculator size={16} />}
+                        {formulaFields.has(field.key) ? <Table size={18} /> : <Calculator size={18} />}
                     </Button>
                   </div>
                 </div>
@@ -195,60 +203,70 @@ export default function ColumnMapper({ headers, sample, onConfirm, onCancel, isP
            </div>
 
            {/* Right Side: Data Preview & Summary */}
-           <div className="p-6 bg-slate-50/30 flex flex-col">
-              <h4 className="text-[10px] uppercase font-bold text-slate-500 tracking-widest mb-4">Sample Data Review</h4>
-              <div className="flex-1 bg-white rounded-xl border border-slate-200 overflow-hidden flex flex-col shadow-inner">
-                 <div className="bg-slate-100 p-2 text-[10px] text-slate-500 font-mono border-b border-slate-200 flex justify-between">
-                    <span>Previewing Row 1</span>
-                    <span>Valid Headers Found: {Object.keys(mapping).length}</span>
+           <div className="p-6 md:p-8 bg-slate-900/5 flex flex-col">
+              <h4 className="text-[10px] uppercase font-black text-slate-400 tracking-[0.2em] mb-6">Real-time Data Sync</h4>
+              <div className="flex-1 bg-white/80 backdrop-blur-sm rounded-3xl border border-white/60 overflow-hidden flex flex-col shadow-2xl shadow-slate-200/50">
+                 <div className="bg-slate-900/5 p-4 text-[10px] text-slate-500 font-black uppercase tracking-widest border-b border-white/40 flex justify-between">
+                    <span>Preview: Protocol V1</span>
+                    <span>Mapped Fields: {Object.keys(mapping).length}</span>
                  </div>
-                 <div className="flex-1 p-4 space-y-3 overflow-y-auto">
+                 <div className="flex-1 p-6 space-y-4 overflow-y-auto custom-scrollbar">
                     {FIELDS.filter(f => mapping[f.key]).map(f => (
-                       <div key={f.key} className="flex justify-between items-start gap-4 pb-2 border-b border-slate-50">
-                          <div>
-                             <p className="text-[9px] uppercase font-bold text-slate-400">{f.label}</p>
-                             <p className="text-xs text-slate-500 italic max-w-40 truncate">
-                                {formulaFields.has(f.key) ? `formula: ${mapping[f.key]}` : `from "${mapping[f.key]}"`}
+                       <div key={f.key} className="flex justify-between items-start gap-4 pb-3 border-b border-slate-100 last:border-0">
+                          <div className="space-y-0.5">
+                             <p className="text-[9px] uppercase font-black text-slate-400 tracking-widest">{f.label}</p>
+                             <p className="text-[10px] text-slate-500 italic max-w-[150px] truncate font-medium">
+                                {formulaFields.has(f.key) ? `formula: ${mapping[f.key]}` : `source: ${mapping[f.key]}`}
                              </p>
                            </div>
-                           <p className="text-sm font-black text-slate-800 text-right">
+                           <p className="text-sm font-black text-slate-900 text-right tabular-nums">
                               {getDisplayValue(f.key)}
                            </p>
                         </div>
                     ))}
                     {Object.keys(mapping).length === 0 && (
-                        <div className="h-full flex flex-col items-center justify-center text-slate-400 py-20 opacity-50">
-                            <ArrowRight className="mb-2 rotate-180" />
-                            <p className="text-xs">Start mapping columns on the left</p>
+                        <div className="h-full flex flex-col items-center justify-center text-slate-400 py-20 opacity-50 space-y-4">
+                            <div className="h-16 w-16 rounded-full bg-slate-100 flex items-center justify-center animate-pulse">
+                                <ArrowRight className="rotate-180 text-slate-300" size={32} />
+                            </div>
+                            <p className="text-[10px] font-black uppercase tracking-widest">Awaiting Mapping Input</p>
                         </div>
                     )}
                  </div>
               </div>
 
-              <div className="mt-8 space-y-3">
-                 {!isFormValid && (
-                    <div className="p-3 bg-amber-50 border border-amber-200 rounded flex gap-2 text-amber-700 text-xs shadow-sm">
-                       <AlertCircle size={14} className="mt-0.5 flex-shrink-0" />
-                       <p>Please map all <strong>required</strong> fields (Rider ID, Date, Batch, and Single Orders) to continue.</p>
+               <div className="mt-auto pt-8 space-y-4">
+                  {!isFormValid && (
+                    <div className="p-4 bg-amber-50/50 border border-amber-200 rounded-2xl flex gap-3 text-amber-700 shadow-sm">
+                       <AlertCircle size={18} className="shrink-0" />
+                       <div className="space-y-1">
+                          <p className="text-[10px] font-black uppercase tracking-widest">Required Fields Missing</p>
+                          <p className="text-xs font-medium">Map Rider ID, Date, Batch, and Single Orders to continue.</p>
+                       </div>
                     </div>
-                 )}
-                 <div className="flex gap-4">
-                    <Button variant="ghost" onClick={onCancel} className="flex-1 border-slate-200">Cancel</Button>
-                     <Button 
-                       onClick={() => {
-                           const submission: Record<string, string> = {};
-                           Object.keys(mapping).forEach(k => {
-                               submission[k] = formulaFields.has(k) ? `FORMULA:${mapping[k]}` : mapping[k];
-                           });
-                           onConfirm(submission);
-                       }} 
-                       disabled={!isFormValid || isProcessing}
-                       className="flex-2 bg-slate-900 hover:bg-black text-white px-8 font-black tracking-tight"
-                     >
-                       {isProcessing ? "IMPORTING..." : "CONFIRM & IMPORT"}
-                     </Button>
-                 </div>
-              </div>
+                  )}
+                  <div className="flex gap-4">
+                    <Button variant="ghost" onClick={onCancel} className="flex-1 h-12 border-slate-200 text-slate-400 font-black uppercase tracking-widest text-[10px] hover:bg-white rounded-2xl transition-all">Cancel</Button>
+                      <Button 
+                        onClick={() => {
+                            const submission: Record<string, string> = {};
+                            Object.keys(mapping).forEach(k => {
+                                submission[k] = formulaFields.has(k) ? `FORMULA:${mapping[k]}` : mapping[k];
+                            });
+                            onConfirm(submission);
+                        }} 
+                        disabled={!isFormValid || isProcessing}
+                        className="flex-[2] bg-slate-900 hover:bg-black text-white h-14 rounded-2xl font-black uppercase italic tracking-tighter text-lg shadow-xl shadow-slate-900/20 transition-all active:scale-95"
+                      >
+                        {isProcessing ? (
+                           <>
+                             <Loader2 className="animate-spin mr-3" size={20} />
+                             Ingesting...
+                           </>
+                        ) : "Execute Import"}
+                      </Button>
+                  </div>
+               </div>
            </div>
         </div>
       </CardContent>
