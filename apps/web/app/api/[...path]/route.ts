@@ -22,7 +22,8 @@ export async function DELETE(request: NextRequest, props: { params: Promise<{ pa
 
 async function handleRequest(request: NextRequest, pathParts: string[]) {
   const path = pathParts.join('/');
-  const internalUrl = process.env.INTERNAL_API_URL || 'http://api:4000';
+  const internalUrl = (process.env.INTERNAL_API_URL || 'http://api:4000').replace(/\/$/, '');
+
   const targetUrl = `${internalUrl}/${path}${request.nextUrl.search}`;
 
   console.log(`[Proxy] ${request.method} ${request.nextUrl.pathname} -> ${targetUrl}`);

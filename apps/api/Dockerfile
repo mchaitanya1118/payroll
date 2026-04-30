@@ -72,6 +72,7 @@ COPY --from=builder /app/apps/api/prisma ./prisma
 
 EXPOSE 4000
 
-CMD ["sh", "-c", "npx prisma db seed && npm run start:prod"]
+CMD ["sh", "-c", "sleep 5 && npx prisma migrate deploy && npx prisma db seed || true && npm run start:prod"]
+
 
 
