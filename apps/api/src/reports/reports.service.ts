@@ -161,7 +161,7 @@ export class ReportsService {
 
   async getAnalyticsSummary(tenantId: string) {
     const now = new Date();
-    const months = [];
+    const months: { month: number; year: number }[] = [];
     for (let i = 5; i >= 0; i--) {
       const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
       months.push({ month: d.getMonth() + 1, year: d.getFullYear() });
