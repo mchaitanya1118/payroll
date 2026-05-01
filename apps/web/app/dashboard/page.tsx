@@ -147,10 +147,10 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-5">
         {loading ? (
           Array(4).fill(0).map((_, i) => (
-            <Skeleton key={i} className="h-32 rounded-3xl" />
+            <Skeleton key={i} className="h-24 rounded-[2rem]" />
           ))
         ) : (
           cards.map((card, index) => (
@@ -166,17 +166,17 @@ export default function DashboardPage() {
                 index === 1 ? 'from-emerald-500 to-teal-600' :
                 index === 2 ? 'from-amber-500 to-orange-600' :
                 'from-indigo-500 to-purple-600'
-              } rounded-3xl blur opacity-10 group-hover:opacity-30 transition duration-500`}></div>
-              <Card className="relative glass-card border-none shadow-xl h-full overflow-hidden bg-white/80 backdrop-blur-xl rounded-3xl transition-all duration-500 group-hover:-translate-y-2">
-                <CardHeader className="p-4 md:p-5 pb-2">
-                  <div className={`h-10 w-10 rounded-xl ${card.color.replace('bg-', 'bg-opacity-10 text-').replace('-500', '-600')} flex items-center justify-center mb-3 shadow-sm group-hover:scale-110 transition-transform duration-500`}>
-                    <card.icon size={20} />
+              } rounded-[2rem] blur opacity-10 group-hover:opacity-30 transition duration-500`}></div>
+              <Card className="relative glass-card border-none shadow-lg h-full overflow-hidden bg-white/80 backdrop-blur-xl rounded-[2rem] transition-all duration-500 group-hover:-translate-y-1">
+                <CardHeader className="p-3 md:p-4 pb-1">
+                  <div className={`h-8 w-8 rounded-lg ${card.color.replace('bg-', 'bg-opacity-10 text-').replace('-500', '-600')} flex items-center justify-center mb-2 shadow-sm group-hover:scale-110 transition-transform duration-500`}>
+                    <card.icon size={16} />
                   </div>
-                  <CardTitle className="text-[10px] md:text-xs font-black text-slate-400 uppercase tracking-widest">{card.title}</CardTitle>
+                  <CardTitle className="text-[9px] font-black text-slate-400 uppercase tracking-widest">{card.title}</CardTitle>
                 </CardHeader>
-                <CardContent className="p-4 md:p-5 pt-0">
-                  <div className="text-xl md:text-2xl font-black text-slate-900 tracking-tighter">{card.value}</div>
-                  <p className="text-[9px] md:text-[10px] text-slate-500 font-medium mt-1 leading-tight line-clamp-1">{card.description}</p>
+                <CardContent className="p-3 md:p-4 pt-0">
+                  <div className="text-lg md:text-xl font-black text-slate-900 tracking-tighter">{card.value}</div>
+                  <p className="text-[8px] text-slate-500 font-medium mt-0.5 leading-tight line-clamp-1">{card.description}</p>
                 </CardContent>
               </Card>
             </motion.div>
