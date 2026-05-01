@@ -24,8 +24,6 @@ interface Rider {
   companyCode?: string;
   email?: string;
   phoneNumber?: string;
-  iban?: string;
-  bankName?: string;
   createdAt: string;
 }
 
@@ -48,8 +46,6 @@ export default function RidersPage() {
   const [newCompany, setNewCompany] = useState('');
   const [newEmail, setNewEmail] = useState('');
   const [newPhone, setNewPhone] = useState('');
-  const [newIban, setNewIban] = useState('');
-  const [newBankName, setNewBankName] = useState('');
 
   const fetchRiders = async () => {
     try {
@@ -89,8 +85,6 @@ export default function RidersPage() {
     setNewCompany('');
     setNewEmail('');
     setNewPhone('');
-    setNewIban('');
-    setNewBankName('');
     setNewVehicle('BIKE');
     setNewRateType('TARGET');
     setOpen(true);
@@ -103,8 +97,6 @@ export default function RidersPage() {
     setNewCompany(rider.companyCode || '');
     setNewEmail(rider.email || '');
     setNewPhone(rider.phoneNumber || '');
-    setNewIban(rider.iban || '');
-    setNewBankName(rider.bankName || '');
     setNewVehicle(rider.vehicleType);
     setNewRateType(rider.rateType || 'TARGET');
     setOpen(true);
@@ -114,22 +106,26 @@ export default function RidersPage() {
     try {
       if (!newRiderId || !newRiderName) return toast.error("Please fill in required details");
       
-      const payload = {
-        riderId: newRiderId,
-        riderName: newRiderName,
-        vehicleType: newVehicle,
-        rateType: newRateType,
-        companyCode: newCompany,
-        email: newEmail,
-        phoneNumber: newPhone,
-        iban: newIban,
-        bankName: newBankName,
-      };
-
       if (editingId) {
-        await api.patch(`/riders/${editingId}`, payload);
+        await api.patch(`/riders/${editingId}`, {
+          riderId: newRiderId,
+          riderName: newRiderName,
+          vehicleType: newVehicle,
+          rateType: newRateType,
+          companyCode: newCompany,
+          email: newEmail,
+          phoneNumber: newPhone,
+        });
       } else {
-        await api.post('/riders', payload);
+        await api.post('/riders', {
+          riderId: newRiderId,
+          riderName: newRiderName,
+          vehicleType: newVehicle,
+          rateType: newRateType,
+          companyCode: newCompany,
+          email: newEmail,
+          phoneNumber: newPhone,
+        });
       }
       toast.success(editingId ? "Pilot profile updated" : "New pilot enrolled successfully");
       
@@ -268,27 +264,6 @@ export default function RidersPage() {
                   placeholder="Ex. BLR-HUB-01" 
                   className="rounded-xl h-12 border-slate-200 focus:border-emerald-500 transition-all font-bold"
                 />
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="space-y-2">
-                  <Label className="text-[10px] uppercase font-black tracking-widest text-slate-400 pl-1">BANK NAME</Label>
-                  <Input 
-                    value={newBankName} 
-                    onChange={e => setNewBankName(e.target.value)} 
-                    placeholder="Ex. AL RAJHI BANK" 
-                    className="rounded-xl h-12 border-slate-200 focus:border-emerald-500 transition-all font-bold"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label className="text-[10px] uppercase font-black tracking-widest text-slate-400 pl-1">IBAN NUMBER</Label>
-                  <Input 
-                    value={newIban} 
-                    onChange={e => setNewIban(e.target.value)} 
-                    placeholder="SAXXXXXXXXXXXXXXXXXXXXXX" 
-                    className="rounded-xl h-12 border-slate-200 focus:border-emerald-500 transition-all font-bold"
-                  />
-                </div>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

@@ -262,43 +262,4 @@ export class ReportsService {
       throw error;
     }
   }
-
-  async exportBankWpsCsv(tenantId: string, month: number, year: number) {
-    const tenant = await this.prisma.tenant.findUnique({ where: { id: tenantId } });
-    const slips = await this.prisma.payslip.findMany({
-      where: { tenantId, month, year },
-      include: { rider: true },
-    });
-
-    const headers = [
-      "Employee Name",
-      "IBAN",
-      "Bank Name",
-      "Establishment ID",
-      "Amount",
-      "Currency",
-      "Description",
-      "Month",
-      "Year",
-    ];
-
-    const rows = slips.map((s) => [
-      s.rider.riderName,
-      s.rider.iban || "",
-      s.rider.bankName || "",
-      tenant?.wpsId || "",
-      s.netTotal.toFixed(2),
-      tenant?.currency || "SAR",
-      `Salary_${month}_${year}`,
-      month,
-      year,
-    ]);
-
-    const csvContent = [
-      headers.map((h) => this.escapeCsv(h)).join(","),
-      ...rows.map((row) => row.map((cell) => this.escapeCsv(cell)).join(",")),
-    ].join("\n");
-
-    return csvContent;
-  }
 }

@@ -10,7 +10,6 @@ datasource db {
 model Tenant {
   id        String     @id @default(cuid())
   name      String
-  wpsId     String?    // Establishment ID for WPS
   currency  String     @default("SAR")
   currencySymbol String @default("SAR")
   createdAt DateTime   @default(now())
@@ -42,8 +41,6 @@ model Rider {
   riderName    String
   email        String?
   phoneNumber  String?
-  iban         String?      // Bank IBAN
-  bankName     String?      // Bank Name
   vehicleType  VehicleType
   rateType     RateType     @default(TARGET)
   tenantId     String
