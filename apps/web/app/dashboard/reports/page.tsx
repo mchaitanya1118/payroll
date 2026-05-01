@@ -67,7 +67,7 @@ export default function ReportsPage() {
 
   const years = [2024, 2025, 2026];
 
-  const handleDownload = async (type: 'payroll' | 'riders' | 'rates' | 'performance') => {
+  const handleDownload = async (type: 'payroll' | 'riders' | 'rates' | 'performance' | 'bank') => {
     setLoading(type);
     try {
       let url = '';
@@ -85,6 +85,9 @@ export default function ReportsPage() {
       } else if (type === 'performance') {
         url = `/reports/performance/export?month=${month}&year=${year}`;
         filename = `riders_performance_${month}_${year}.csv`;
+      } else if (type === 'bank') {
+        url = `/reports/bank/export?month=${month}&year=${year}`;
+        filename = `bank_wps_export_${month}_${year}.csv`;
       }
 
       const response = await api.get(url, { responseType: 'blob' });
@@ -143,7 +146,7 @@ export default function ReportsPage() {
         </div>
       </div>
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 md:gap-6">
         {/* Monthly Payroll Card */}
         <div className="group relative">
           <div className="absolute -inset-0.5 bg-gradient-to-r from-emerald-500 to-teal-600 rounded-3xl blur opacity-20 group-hover:opacity-40 transition duration-500"></div>
@@ -154,7 +157,7 @@ export default function ReportsPage() {
                 <Zap className="text-white" size={20} />
               </div>
               <CardTitle className="text-base md:text-lg font-black uppercase italic tracking-tight text-slate-900 mb-1">Monthly Payroll</CardTitle>
-              <CardDescription className="text-[10px] md:text-xs text-slate-500 font-medium leading-tight line-clamp-2">Full payout breakdown with target achievements and bonus calculations.</CardDescription>
+              <CardDescription className="text-[10px] md:text-xs text-slate-500 font-medium leading-tight line-clamp-2">Full payout breakdown with target achievements.</CardDescription>
             </CardHeader>
             <CardContent className="relative z-10 p-4 md:p-5 pt-3">
               <Button 
@@ -163,7 +166,32 @@ export default function ReportsPage() {
                 className="w-full bg-slate-900 hover:bg-black text-white h-10 rounded-xl font-black uppercase tracking-widest text-[8px] md:text-[10px] transition-all active:scale-95 shadow-lg group"
               >
                 <Download className="mr-1.5 group-hover:translate-y-0.5 transition-transform" size={14} />
-                {loading === 'payroll' ? '...' : 'GET PAYROLL CSV'}
+                {loading === 'payroll' ? '...' : 'GET PAYROLL'}
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Bank WPS Card */}
+        <div className="group relative">
+          <div className="absolute -inset-0.5 bg-gradient-to-r from-emerald-400 to-emerald-600 rounded-3xl blur opacity-20 group-hover:opacity-40 transition duration-500"></div>
+          <Card className="relative glass-card border-none shadow-xl h-full overflow-hidden bg-white/80 backdrop-blur-xl rounded-3xl transition-all duration-500 group-hover:-translate-y-2">
+            <div className="absolute top-0 right-0 -mr-8 -mt-8 w-40 h-40 bg-emerald-400/5 rounded-full blur-3xl group-hover:bg-emerald-400/10 transition-colors"></div>
+            <CardHeader className="relative z-10 p-4 md:p-5 pb-0">
+              <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-emerald-400 to-emerald-600 flex items-center justify-center mb-4 shadow-lg shadow-emerald-100 group-hover:scale-110 transition-transform duration-500">
+                <Building className="text-white" size={20} />
+              </div>
+              <CardTitle className="text-base md:text-lg font-black uppercase italic tracking-tight text-slate-900 mb-1">Bank WPS File</CardTitle>
+              <CardDescription className="text-[10px] md:text-xs text-slate-500 font-medium leading-tight line-clamp-2">Standardized salary transfer file for Saudi banks.</CardDescription>
+            </CardHeader>
+            <CardContent className="relative z-10 p-4 md:p-5 pt-3">
+              <Button 
+                onClick={() => handleDownload('bank')} 
+                disabled={loading === 'bank'}
+                className="w-full bg-emerald-600 hover:bg-emerald-700 text-white h-10 rounded-xl font-black uppercase tracking-widest text-[8px] md:text-[10px] transition-all active:scale-95 shadow-lg group"
+              >
+                <Download className="mr-1.5 group-hover:translate-y-0.5 transition-transform" size={14} />
+                {loading === 'bank' ? '...' : 'GET WPS FILE'}
               </Button>
             </CardContent>
           </Card>
@@ -178,8 +206,8 @@ export default function ReportsPage() {
               <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center mb-4 shadow-lg shadow-blue-200 group-hover:scale-110 transition-transform duration-500">
                 <Users className="text-white" size={20} />
               </div>
-              <CardTitle className="text-base md:text-lg font-black uppercase italic tracking-tight text-slate-900 mb-1">Riders Directory</CardTitle>
-              <CardDescription className="text-[10px] md:text-xs text-slate-500 font-medium leading-tight line-clamp-2">Complete pilot database with vehicle specs and registration status.</CardDescription>
+              <CardTitle className="text-base md:text-lg font-black uppercase italic tracking-tight text-slate-900 mb-1">Riders List</CardTitle>
+              <CardDescription className="text-[10px] md:text-xs text-slate-500 font-medium leading-tight line-clamp-2">Complete pilot database with vehicle specs.</CardDescription>
             </CardHeader>
             <CardContent className="relative z-10 p-4 md:p-5 pt-3">
               <Button 
@@ -188,7 +216,7 @@ export default function ReportsPage() {
                 className="w-full bg-blue-600 hover:bg-blue-700 text-white h-10 rounded-xl font-black uppercase tracking-widest text-[8px] md:text-[10px] transition-all active:scale-95 shadow-lg group"
               >
                 <Download className="mr-1.5 group-hover:translate-y-0.5 transition-transform" size={14} />
-                {loading === 'riders' ? '...' : 'GET RIDERS LIST'}
+                {loading === 'riders' ? '...' : 'GET RIDERS'}
               </Button>
             </CardContent>
           </Card>
@@ -204,7 +232,7 @@ export default function ReportsPage() {
                 <ShieldCheck className="text-white" size={20} />
               </div>
               <CardTitle className="text-base md:text-lg font-black uppercase italic tracking-tight text-slate-900 mb-1">Rate Standards</CardTitle>
-              <CardDescription className="text-[10px] md:text-xs text-slate-500 font-medium leading-tight line-clamp-2">Current revenue configurations and payout rules for auditing.</CardDescription>
+              <CardDescription className="text-[10px] md:text-xs text-slate-500 font-medium leading-tight line-clamp-2">Current revenue configurations and payout rules.</CardDescription>
             </CardHeader>
             <CardContent className="relative z-10 p-4 md:p-5 pt-3">
               <Button 
@@ -213,7 +241,7 @@ export default function ReportsPage() {
                 className="w-full bg-purple-600 hover:bg-purple-700 text-white h-10 rounded-xl font-black uppercase tracking-widest text-[8px] md:text-[10px] transition-all active:scale-95 shadow-lg group"
               >
                 <Download className="mr-1.5 group-hover:translate-y-0.5 transition-transform" size={14} />
-                {loading === 'rates' ? '...' : 'GET RATES EXCEL'}
+                {loading === 'rates' ? '...' : 'GET RATES'}
               </Button>
             </CardContent>
           </Card>
@@ -229,7 +257,7 @@ export default function ReportsPage() {
                 <BarChart className="text-white" size={20} />
               </div>
               <CardTitle className="text-base md:text-lg font-black uppercase italic tracking-tight text-slate-900 mb-1">Performance</CardTitle>
-              <CardDescription className="text-[10px] md:text-xs text-slate-500 font-medium leading-tight line-clamp-2">Deep dive into rider productivity and revenue generation trends.</CardDescription>
+              <CardDescription className="text-[10px] md:text-xs text-slate-500 font-medium leading-tight line-clamp-2">Deep dive into rider productivity and revenue trends.</CardDescription>
             </CardHeader>
             <CardContent className="relative z-10 p-4 md:p-5 pt-3">
               <Button 
@@ -238,7 +266,7 @@ export default function ReportsPage() {
                 className="w-full bg-amber-600 hover:bg-amber-700 text-white h-10 rounded-xl font-black uppercase tracking-widest text-[8px] md:text-[10px] transition-all active:scale-95 shadow-lg group"
               >
                 <Download className="mr-1.5 group-hover:translate-y-0.5 transition-transform" size={14} />
-                {loading === 'performance' ? '...' : 'GET PERFORMANCE CSV'}
+                {loading === 'performance' ? '...' : 'GET PERFORMANCE'}
               </Button>
             </CardContent>
           </Card>

@@ -67,24 +67,20 @@ export class ReportsController {
 
   @Get("performance/export")
   @Roles(UserRole.ADMIN)
-  async exportPerformance(
-    @Request() req: any,
-    @Query("month") month: string,
-    @Query("year") year: string,
-    @Res() res: any,
-  ) {
-    const csv = await this.reportsService.exportPerformanceCsv(
-      req.user.tenantId,
-      parseInt(month),
-      parseInt(year),
-    );
+  async exportPerformance(@Request() req: any, @Query("month") month: string, @Query("year") year: string, @Res() res: Response) {
+    const csv = await this.reportsService.exportPerformanceCsv(req.user.tenantId, +month, +year);
+    res.header("Content-Type", "text/csv");
+    res.attachment(`performance_${month}_${year}.csv`);
+    return res.send(csv);
+  }
 
-    res.set({
-      "Content-Type": "text/csv",
-      "Content-Disposition": `attachment; filename="performance_${month}_${year}.csv"`,
-    });
-
-    res.send(csv);
+  @Get("bank/export")
+  @Roles(UserRole.ADMIN)
+  async exportBank(@Request() req: any, @Query("month") month: string, @Query("year") year: string, @Res() res: Response) {
+    const csv = await this.reportsService.exportBankWpsCsv(req.user.tenantId, +month, +year);
+    res.header("Content-Type", "text/csv");
+    res.attachment(`bank_wps_${month}_${year}.csv`);
+    return res.send(csv);
   }
 
   @Get("analytics")
