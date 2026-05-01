@@ -13,12 +13,12 @@ import { Roles } from "../auth/roles.decorator";
 import { UserRole } from "@prisma/client";
 
 @UseGuards(JwtAuthGuard, RolesGuard)
-@Roles(UserRole.ADMIN)
 @Controller("reports")
 export class ReportsController {
   constructor(private readonly reportsService: ReportsService) {}
 
   @Get("payroll/export")
+  @Roles(UserRole.ADMIN)
   async exportPayroll(
     @Request() req: any,
     @Query("month") month: string,
@@ -40,6 +40,7 @@ export class ReportsController {
   }
 
   @Get("riders/export")
+  @Roles(UserRole.ADMIN)
   async exportRiders(@Request() req: any, @Res() res: any) {
     const csv = await this.reportsService.exportRidersCsv(req.user.tenantId);
 
@@ -65,6 +66,7 @@ export class ReportsController {
   }
 
   @Get("performance/export")
+  @Roles(UserRole.ADMIN)
   async exportPerformance(
     @Request() req: any,
     @Query("month") month: string,
