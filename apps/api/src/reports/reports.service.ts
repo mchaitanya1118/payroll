@@ -159,13 +159,16 @@ export class ReportsService {
     return csvContent;
   }
 
-  async getAnalyticsSummary(tenantId: string) {
-    console.log(`[ReportsService] Generating analytics for tenant: ${tenantId}`);
+  async getAnalyticsSummary(tenantId: string, monthParam?: number, yearParam?: number) {
+    console.log(`[ReportsService] Generating analytics for tenant: ${tenantId} Period: ${monthParam}/${yearParam}`);
     try {
       const now = new Date();
+      const currentMonth = monthParam || now.getMonth() + 1;
+      const currentYear = yearParam || now.getFullYear();
+
       const months: { month: number; year: number }[] = [];
       for (let i = 5; i >= 0; i--) {
-        const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+        const d = new Date(currentYear, (currentMonth - 1) - i, 1);
         months.push({ month: d.getMonth() + 1, year: d.getFullYear() });
       }
 
@@ -206,8 +209,8 @@ export class ReportsService {
       const topRidersSlips = await this.prisma.payslip.findMany({
         where: {
           tenantId,
-          month: now.getMonth() + 1,
-          year: now.getFullYear(),
+          month: currentMonth,
+          year: currentYear,
         },
         include: { rider: true },
         orderBy: { grossRevenue: "desc" },
@@ -222,7 +225,7 @@ export class ReportsService {
 
       // Advanced Efficiency Metrics
       const currentMonthSlips = await this.prisma.payslip.findMany({
-        where: { tenantId, month: now.getMonth() + 1, year: now.getFullYear() },
+        where: { tenantId, month: currentMonth, year: currentYear },
       });
 
       const totalAchieved = currentMonthSlips.filter(s => s.targetAchieved).length;

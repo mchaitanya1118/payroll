@@ -26,50 +26,57 @@ export default function DashboardPage() {
   const [analytics, setAnalytics] = useState<any>(null);
   const [recentActivity, setRecentActivity] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [month, setMonth] = useState(new Date().getMonth() + 1);
+  const [year, setYear] = useState(new Date().getFullYear());
+
+  const months = [
+    { value: 1, label: 'Jan' }, { value: 2, label: 'Feb' }, { value: 3, label: 'Mar' },
+    { value: 4, label: 'Apr' }, { value: 5, label: 'May' }, { value: 6, label: 'Jun' },
+    { value: 7, label: 'Jul' }, { value: 8, label: 'Aug' }, { value: 9, label: 'Sep' },
+    { value: 10, label: 'Oct' }, { value: 11, label: 'Nov' }, { value: 12, label: 'Dec' }
+  ];
+
+  const fetchDashboardData = async () => {
+    setLoading(true);
+    // Fetch core stats
+    try {
+      const [ridersCountRes, dashboardRes] = await Promise.all([
+        api.get('/riders/count'),
+        api.get(`/payslips/dashboard?month=${month}&year=${year}`)
+      ]);
+      
+      const summary = dashboardRes.data.summary || {};
+      setStats({
+        totalEmployees: ridersCountRes.data || 0,
+        totalPayoutLastMonth: summary.totalPayout || 0,
+        activeSlips: dashboardRes.data.slipsCount || 0,
+        payoutGrowth: summary.payoutGrowth || 0,
+        insights: dashboardRes.data.insights || {
+          efficiencyGrowth: 0,
+          dominantStructure: 'Order-based',
+          avgSalary: 0,
+          topEarner: 0
+        }
+      });
+      setRecentActivity(dashboardRes.data.recentActivity || []);
+    } catch (error) {
+      console.error('Failed to fetch core dashboard stats');
+    }
+
+    // Fetch analytics separately
+    try {
+      const analyticsRes = await api.get(`/reports/analytics?month=${month}&year=${year}`);
+      setAnalytics(analyticsRes.data);
+    } catch (error) {
+      console.error('Failed to fetch analytics data');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    const fetchDashboardData = async () => {
-      setLoading(true);
-      const month = new Date().getMonth() + 1;
-      const year = new Date().getFullYear();
-
-      // Fetch core stats
-      try {
-        const [ridersCountRes, dashboardRes] = await Promise.all([
-          api.get('/riders/count'),
-          api.get(`/payslips/dashboard?month=${month}&year=${year}`)
-        ]);
-        
-        const summary = dashboardRes.data.summary || {};
-        setStats({
-          totalEmployees: ridersCountRes.data || 0,
-          totalPayoutLastMonth: summary.totalPayout || 0,
-          activeSlips: dashboardRes.data.slipsCount || 0,
-          payoutGrowth: summary.payoutGrowth || 0,
-          insights: dashboardRes.data.insights || {
-            efficiencyGrowth: 0,
-            dominantStructure: 'Order-based',
-            avgSalary: 0,
-            topEarner: 0
-          }
-        });
-        setRecentActivity(dashboardRes.data.recentActivity || []);
-      } catch (error) {
-        console.error('Failed to fetch core dashboard stats');
-      }
-
-      // Fetch analytics separately
-      try {
-        const analyticsRes = await api.get('/reports/analytics');
-        setAnalytics(analyticsRes.data);
-      } catch (error) {
-        console.error('Failed to fetch analytics data');
-      } finally {
-        setLoading(false);
-      }
-    };
     fetchDashboardData();
-  }, []);
+  }, [month, year]);
 
   const cards = [
     { 
@@ -80,18 +87,18 @@ export default function DashboardPage() {
       description: 'Active employees across all roles'
     },
     { 
-      title: 'Current Payroll', 
+      title: 'Monthly Payout', 
       value: format(stats.totalPayoutLastMonth), 
       icon: DollarSign, 
       color: 'bg-emerald-500',
-      description: 'Total payout for this month'
+      description: `Total payout for ${months.find(m => m.value === month)?.label} ${year}`
     },
     { 
       title: 'Slips Generated', 
       value: stats.activeSlips, 
       icon: FileCheck, 
       color: 'bg-amber-500',
-      description: 'Completed slips for review'
+      description: 'Completed slips for this period'
     },
     { 
       title: 'Growth Rate', 
@@ -105,25 +112,39 @@ export default function DashboardPage() {
   return (
     <div className="space-y-8 animate-in fade-in duration-500">
       {/* Premium Header */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-white/40 backdrop-blur-xl p-6 rounded-3xl premium-shadow border border-white/60">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 bg-white/40 backdrop-blur-xl p-6 rounded-[2rem] premium-shadow border border-white/60">
         <div className="flex flex-col gap-1">
           <h2 className="text-2xl md:text-3xl font-black text-slate-900 tracking-tight uppercase italic flex items-center gap-3">
             <TrendingUp className="text-emerald-500 shrink-0" size={32} />
             Commander Center
           </h2>
-          <p className="text-xs md:text-sm text-slate-500 font-medium leading-relaxed">Real-time intelligence and workforce performance oversight.</p>
+          <p className="text-xs md:text-sm text-slate-500 font-medium leading-relaxed">Intelligence oversight for {months.find(m => m.value === month)?.label} {year}.</p>
         </div>
-        {!loading && (
-          <div className="flex items-center gap-6 pr-4">
-             <div className="text-right hidden sm:block">
-                <p className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Global Status</p>
-                <p className="text-xs font-bold text-emerald-600 uppercase italic">All Systems Operational</p>
+        
+        <div className="flex items-center gap-3">
+           <div className="flex items-center gap-2 bg-slate-900/5 p-1 rounded-2xl border border-slate-200">
+              <select 
+                value={month} 
+                onChange={(e) => setMonth(parseInt(e.target.value))}
+                className="bg-transparent border-none text-[10px] font-black uppercase tracking-widest px-3 py-2 outline-none cursor-pointer"
+              >
+                {months.map(m => <option key={m.value} value={m.value}>{m.label}</option>)}
+              </select>
+              <div className="h-4 w-[1px] bg-slate-200" />
+              <select 
+                value={year} 
+                onChange={(e) => setYear(parseInt(e.target.value))}
+                className="bg-transparent border-none text-[10px] font-black uppercase tracking-widest px-3 py-2 outline-none cursor-pointer"
+              >
+                {[2024, 2025, 2026].map(y => <option key={y} value={y}>{y}</option>)}
+              </select>
+           </div>
+           {!loading && (
+             <div className="h-10 w-10 rounded-full bg-emerald-500/10 flex items-center justify-center">
+                <div className="h-2 w-2 rounded-full bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.8)]"></div>
              </div>
-             <div className="h-10 w-10 rounded-full bg-emerald-500/10 flex items-center justify-center animate-pulse">
-                <div className="h-3 w-3 rounded-full bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.8)]"></div>
-             </div>
-          </div>
-        )}
+           )}
+        </div>
       </div>
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">

@@ -88,7 +88,15 @@ export class ReportsController {
   }
 
   @Get("analytics")
-  async getAnalytics(@Request() req: any) {
-    return this.reportsService.getAnalyticsSummary(req.user.tenantId);
+  async getAnalytics(
+    @Request() req: any,
+    @Query("month") month?: string,
+    @Query("year") year?: string,
+  ) {
+    return this.reportsService.getAnalyticsSummary(
+      req.user.tenantId,
+      month ? parseInt(month) : undefined,
+      year ? parseInt(year) : undefined,
+    );
   }
 }
