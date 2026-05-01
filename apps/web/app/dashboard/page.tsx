@@ -29,17 +29,18 @@ export default function DashboardPage() {
 
   useEffect(() => {
     const fetchDashboardData = async () => {
+      setLoading(true);
+      const month = new Date().getMonth() + 1;
+      const year = new Date().getFullYear();
+
+      // Fetch core stats
       try {
-        const month = new Date().getMonth() + 1;
-        const year = new Date().getFullYear();
-        const [ridersCountRes, dashboardRes, analyticsRes] = await Promise.all([
+        const [ridersCountRes, dashboardRes] = await Promise.all([
           api.get('/riders/count'),
-          api.get(`/payslips/dashboard?month=${month}&year=${year}`),
-          api.get('/reports/analytics')
+          api.get(`/payslips/dashboard?month=${month}&year=${year}`)
         ]);
         
         const summary = dashboardRes.data.summary || {};
-        
         setStats({
           totalEmployees: ridersCountRes.data || 0,
           totalPayoutLastMonth: summary.totalPayout || 0,
@@ -52,11 +53,17 @@ export default function DashboardPage() {
             topEarner: 0
           }
         });
-
-        setAnalytics(analyticsRes.data);
         setRecentActivity(dashboardRes.data.recentActivity || []);
       } catch (error) {
-        console.error('Failed to fetch dashboard data');
+        console.error('Failed to fetch core dashboard stats');
+      }
+
+      // Fetch analytics separately
+      try {
+        const analyticsRes = await api.get('/reports/analytics');
+        setAnalytics(analyticsRes.data);
+      } catch (error) {
+        console.error('Failed to fetch analytics data');
       } finally {
         setLoading(false);
       }
@@ -290,7 +297,7 @@ export default function DashboardPage() {
                     <Skeleton className="h-6 w-full" />
                   </div>
                 ))
-              ) : analytics.topRiders.length > 0 ? (
+              ) : analytics?.topRiders?.length > 0 ? (
                 analytics.topRiders.map((rider: any, i: number) => (
                   <motion.div 
                     key={rider.name} 
