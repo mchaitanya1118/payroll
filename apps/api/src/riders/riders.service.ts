@@ -59,9 +59,19 @@ export class RidersService {
   }
 
   async deleteRider(tenantId: string, id: string) {
-    // Manually delete foreign key relations first
-    await this.prisma.dailyEntry.deleteMany({ where: { riderId: id } });
-    await this.prisma.payslip.deleteMany({ where: { riderId: id } });
+    // Manually delete foreign key relations first, ensuring they belong to this tenant
+    await this.prisma.dailyEntry.deleteMany({
+      where: { 
+        riderId: id,
+        rider: { tenantId } 
+      } 
+    });
+    await this.prisma.payslip.deleteMany({ 
+      where: { 
+        riderId: id,
+        tenantId 
+      } 
+    });
 
     return this.prisma.rider.delete({
       where: { id, tenantId },

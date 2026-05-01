@@ -84,4 +84,9 @@ export class ReportsController {
 
     res.send(csv);
   }
+
+  @Get("analytics")
+  async getAnalytics(@Request() req: any) {
+    return this.reportsService.getAnalyticsSummary(req.user.tenantId);
+  }
 }
