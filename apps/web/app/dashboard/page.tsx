@@ -44,22 +44,24 @@ export default function DashboardPage() {
     // Fetch core stats - individual try/catch to ensure partial loading
     try {
       const ridersRes = await api.get('/riders/count');
-      setStats(prev => ({ ...prev, totalEmployees: ridersRes.data || 0 }));
+      setStats(prev => ({ ...prev, totalEmployees: ridersRes?.data ?? 0 }));
     } catch (e) {
       console.error('Workforce count fetch failed:', e);
     }
 
     try {
       const dashboardRes = await api.get(`/payslips/dashboard?month=${month}&year=${year}`);
-      const summary = dashboardRes.data.summary || {};
+      const data = dashboardRes?.data ?? {};
+      const summary = data.summary || {};
+      
       setStats(prev => ({
         ...prev,
         totalPayoutLastMonth: summary.totalPayout || 0,
-        activeSlips: dashboardRes.data.slipsCount || 0,
+        activeSlips: data.slipsCount || 0,
         payoutGrowth: summary.payoutGrowth || 0,
-        insights: dashboardRes.data.insights || prev.insights
+        insights: data.insights || prev.insights
       }));
-      setRecentActivity(dashboardRes.data.recentActivity || []);
+      setRecentActivity(data.recentActivity || []);
     } catch (e) {
       console.error('Dashboard summary fetch failed:', e);
     }
@@ -67,7 +69,9 @@ export default function DashboardPage() {
     // Fetch analytics separately
     try {
       const analyticsRes = await api.get(`/reports/analytics?month=${month}&year=${year}`);
-      setAnalytics(analyticsRes.data);
+      if (analyticsRes?.data) {
+        setAnalytics(analyticsRes.data);
+      }
     } catch (e) {
       console.error('Analytics fetch failed:', e);
     } finally {
@@ -214,11 +218,13 @@ export default function DashboardPage() {
           </CardHeader>
           <CardContent className="h-64 relative px-8">
             {loading || !analytics ? (
-              <Skeleton className="w-full h-full rounded-2xl" />
+              <div className="w-full h-full flex items-center justify-center">
+                <Skeleton className="w-full h-full rounded-2xl" />
+              </div>
             ) : (
               <div className="w-full h-full flex items-end justify-between gap-4">
-                {analytics.monthlyTrends.map((month: any, i: number) => {
-                  const maxVal = Math.max(...analytics.monthlyTrends.map((m: any) => Math.max(m.revenue, m.payout, 1)));
+                {analytics?.monthlyTrends?.map((month: any, i: number) => {
+                  const maxVal = Math.max(...(analytics?.monthlyTrends?.map((m: any) => Math.max(m.revenue, m.payout, 1)) || [1]));
                   const revHeight = (month.revenue / maxVal) * 100;
                   const payHeight = (month.payout / maxVal) * 100;
                   
@@ -271,9 +277,9 @@ export default function DashboardPage() {
                 <div className="relative h-48 w-48 flex items-center justify-center">
                    {/* Simple CSS-based Pie/Circle segments */}
                    <svg viewBox="0 0 100 100" className="transform -rotate-90 w-full h-full">
-                      {analytics.vehicleDistribution.map((item: any, i: number) => {
-                        const total = analytics.vehicleDistribution.reduce((sum: number, d: any) => sum + d.value, 0) || 1;
-                        const prevTotal = analytics.vehicleDistribution.slice(0, i).reduce((sum: number, d: any) => sum + d.value, 0);
+                      {analytics?.vehicleDistribution?.map((item: any, i: number) => {
+                        const total = analytics?.vehicleDistribution?.reduce((sum: number, d: any) => sum + d.value, 0) || 1;
+                        const prevTotal = analytics?.vehicleDistribution?.slice(0, i).reduce((sum: number, d: any) => sum + d.value, 0);
                         const startPercent = (prevTotal / total) * 100;
                         const percent = (item.value / total) * 100;
                         
@@ -301,7 +307,7 @@ export default function DashboardPage() {
                 </div>
               )}
               <div className="mt-8 grid grid-cols-2 gap-4 w-full">
-                 {analytics?.vehicleDistribution.map((item: any) => (
+                 {analytics?.vehicleDistribution?.map((item: any) => (
                    <div key={item.name} className="bg-white/5 rounded-2xl p-4 border border-white/10">
                       <p className="text-[9px] font-black uppercase text-slate-500 tracking-widest mb-1">{item.name}</p>
                       <p className="text-lg font-black tracking-tighter">{item.value}</p>
