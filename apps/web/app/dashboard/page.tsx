@@ -40,37 +40,36 @@ export default function DashboardPage() {
 
   const fetchDashboardData = async () => {
     setLoading(true);
-    // Fetch core stats
+    
+    // Fetch core stats - individual try/catch to ensure partial loading
     try {
-      const [ridersCountRes, dashboardRes] = await Promise.all([
-        api.get('/riders/count'),
-        api.get(`/payslips/dashboard?month=${month}&year=${year}`)
-      ]);
-      
+      const ridersRes = await api.get('/riders/count');
+      setStats(prev => ({ ...prev, totalEmployees: ridersRes.data || 0 }));
+    } catch (e) {
+      console.error('Workforce count fetch failed:', e);
+    }
+
+    try {
+      const dashboardRes = await api.get(`/payslips/dashboard?month=${month}&year=${year}`);
       const summary = dashboardRes.data.summary || {};
-      setStats({
-        totalEmployees: ridersCountRes.data || 0,
+      setStats(prev => ({
+        ...prev,
         totalPayoutLastMonth: summary.totalPayout || 0,
         activeSlips: dashboardRes.data.slipsCount || 0,
         payoutGrowth: summary.payoutGrowth || 0,
-        insights: dashboardRes.data.insights || {
-          efficiencyGrowth: 0,
-          dominantStructure: 'Order-based',
-          avgSalary: 0,
-          topEarner: 0
-        }
-      });
+        insights: dashboardRes.data.insights || prev.insights
+      }));
       setRecentActivity(dashboardRes.data.recentActivity || []);
-    } catch (error) {
-      console.error('Failed to fetch core dashboard stats');
+    } catch (e) {
+      console.error('Dashboard summary fetch failed:', e);
     }
 
     // Fetch analytics separately
     try {
       const analyticsRes = await api.get(`/reports/analytics?month=${month}&year=${year}`);
       setAnalytics(analyticsRes.data);
-    } catch (error) {
-      console.error('Failed to fetch analytics data');
+    } catch (e) {
+      console.error('Analytics fetch failed:', e);
     } finally {
       setLoading(false);
       setLastUpdated(new Date());
