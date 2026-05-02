@@ -56,7 +56,7 @@ export default function PayrollPage() {
         slips: slipsRes.data
       });
     } catch (error) {
-      toast.error('Failed to load payroll dashboard');
+      console.error('Failed to load payroll dashboard', error);
     } finally {
       if (showLoading) setLoading(false);
     }

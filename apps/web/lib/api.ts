@@ -16,6 +16,18 @@ api.interceptors.request.use((config) => {
 api.interceptors.response.use(
   (response) => response,
   (error) => {
+    const message = error.response?.data?.message || error.message || 'Network error occurred';
+    
+    if (typeof window !== 'undefined') {
+      // Dynamic import to avoid SSR issues
+      import('sonner').then(({ toast }) => {
+        toast.error(`System Protocol Error: ${message}`, {
+          description: `Endpoint: ${error.config?.url}`,
+          duration: 10000,
+        });
+      });
+    }
+
     if (error.response?.status === 401) {
       useAuthStore.getState().logout();
       if (typeof window !== 'undefined' && !window.location.pathname.includes('/login')) {
