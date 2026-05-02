@@ -36,6 +36,8 @@ export default function DashboardPage() {
     { value: 10, label: 'Oct' }, { value: 11, label: 'Nov' }, { value: 12, label: 'Dec' }
   ];
 
+  const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
+
   const fetchDashboardData = async () => {
     setLoading(true);
     // Fetch core stats
@@ -71,6 +73,7 @@ export default function DashboardPage() {
       console.error('Failed to fetch analytics data');
     } finally {
       setLoading(false);
+      setLastUpdated(new Date());
     }
   };
 
@@ -114,11 +117,23 @@ export default function DashboardPage() {
       {/* Premium Header */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 bg-white/40 backdrop-blur-xl p-6 rounded-[2rem] premium-shadow border border-white/60">
         <div className="flex flex-col gap-1">
-          <h2 className="text-2xl md:text-3xl font-black text-slate-900 tracking-tight uppercase italic flex items-center gap-3">
-            <TrendingUp className="text-emerald-500 shrink-0" size={32} />
-            Commander Center
-          </h2>
-          <p className="text-xs md:text-sm text-slate-500 font-medium leading-relaxed">Intelligence oversight for {months.find(m => m.value === month)?.label} {year}.</p>
+          <div className="flex items-center gap-3">
+            <h2 className="text-2xl md:text-3xl font-black text-slate-900 tracking-tight uppercase italic flex items-center gap-3">
+              <TrendingUp className="text-emerald-500 shrink-0" size={32} />
+              Commander Center
+            </h2>
+            <button 
+              onClick={() => fetchDashboardData()} 
+              disabled={loading}
+              className="p-2 hover:bg-slate-100 rounded-full transition-colors group"
+            >
+              <ArrowUpRight size={16} className={loading ? "animate-spin text-slate-400" : "text-slate-400 group-hover:text-emerald-500"} />
+            </button>
+          </div>
+          <p className="text-xs md:text-sm text-slate-500 font-medium leading-relaxed">
+            Intelligence oversight for {months.find(m => m.value === month)?.label} {year}.
+            {lastUpdated && <span className="ml-2 text-[10px] text-slate-400 opacity-60">Last sync: {lastUpdated.toLocaleTimeString()}</span>}
+          </p>
         </div>
         
         <div className="flex items-center gap-3">
@@ -362,8 +377,8 @@ export default function DashboardPage() {
             ) : (
               <>
                 <p className="text-slate-400 text-sm md:text-base font-medium leading-relaxed">
-                  Your current payroll distribution shows a <span className="text-emerald-400 font-black italic">Target Achievement Rate of {analytics?.efficiency?.targetAchievementRate}%</span>. 
-                  The operational margin is currently <span className="text-white font-bold">{analytics?.efficiency?.operationalMargin}%</span>, which demonstrates high capital efficiency.
+                  Your current payroll distribution shows a <span className="text-emerald-400 font-black italic">Target Achievement Rate of {analytics?.efficiency?.targetAchievementRate || 0}%</span>. 
+                  The operational margin is currently <span className="text-white font-bold">{analytics?.efficiency?.operationalMargin || 0}%</span>, which demonstrates high capital efficiency.
                 </p>
                 <div className="grid grid-cols-2 gap-4">
                   <div className="p-6 rounded-3xl bg-white/5 border border-white/10 backdrop-blur-sm group/stat hover:bg-white/10 transition-colors">
