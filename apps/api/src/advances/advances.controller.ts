@@ -8,6 +8,7 @@ import {
   Query,
   UseGuards,
   Request,
+  Res,
 } from "@nestjs/common";
 import { AdvancesService } from "./advances.service";
 import { JwtAuthGuard } from "../auth/jwt-auth.guard";
@@ -42,6 +43,22 @@ export class AdvancesController {
   @Get("rider/:riderId")
   async findByRider(@Request() req: any, @Param("riderId") riderId: string) {
     return this.advancesService.findByRider(req.user.tenantId, riderId);
+  }
+
+  @Get("export")
+  @Roles(UserRole.ADMIN)
+  async export(@Request() req: any, @Res() res: any, @Query("companyCode") companyCode?: string) {
+    const buffer = await this.advancesService.exportLedgerExcel(
+      req.user.tenantId,
+      companyCode === 'ALL' ? undefined : companyCode
+    );
+
+    res.set({
+      "Content-Type": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      "Content-Disposition": `attachment; filename="advance_ledger_${companyCode || 'all'}.xlsx"`,
+    });
+
+    res.send(buffer);
   }
 
   @Delete(":id")

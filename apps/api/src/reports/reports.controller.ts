@@ -26,7 +26,7 @@ export class ReportsController {
     @Res() res: any,
     @Query("companyCode") companyCode?: string,
   ) {
-    const csv = await this.reportsService.exportPayrollCsv(
+    const buffer = await this.reportsService.exportPayrollExcel(
       req.user.tenantId,
       parseInt(month),
       parseInt(year),
@@ -34,11 +34,11 @@ export class ReportsController {
     );
 
     res.set({
-      "Content-Type": "text/csv",
-      "Content-Disposition": `attachment; filename="payroll_${month}_${year}${companyCode ? `_${companyCode}` : ""}.csv"`,
+      "Content-Type": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      "Content-Disposition": `attachment; filename="payroll_${month}_${year}${companyCode ? `_${companyCode}` : ""}.xlsx"`,
     });
 
-    res.send(csv);
+    res.send(buffer);
   }
 
   @Get("riders/export")
@@ -48,14 +48,14 @@ export class ReportsController {
     @Res() res: any,
     @Query("companyCode") companyCode?: string,
   ) {
-    const csv = await this.reportsService.exportRidersCsv(req.user.tenantId, companyCode);
+    const buffer = await this.reportsService.exportRidersExcel(req.user.tenantId, companyCode);
 
     res.set({
-      "Content-Type": "text/csv",
-      "Content-Disposition": `attachment; filename="riders_directory${companyCode ? `_${companyCode}` : ""}.csv"`,
+      "Content-Type": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      "Content-Disposition": `attachment; filename="riders_directory${companyCode ? `_${companyCode}` : ""}.xlsx"`,
     });
 
-    res.send(csv);
+    res.send(buffer);
   }
 
   @Get("riders/data")
@@ -82,7 +82,7 @@ export class ReportsController {
     @Res() res: any,
     @Query("companyCode") companyCode?: string,
   ) {
-    const csv = await this.reportsService.exportPerformanceCsv(
+    const buffer = await this.reportsService.exportPerformanceExcel(
       req.user.tenantId,
       parseInt(month),
       parseInt(year),
@@ -90,11 +90,11 @@ export class ReportsController {
     );
 
     res.set({
-      "Content-Type": "text/csv",
-      "Content-Disposition": `attachment; filename="performance_${month}_${year}.csv"`,
+      "Content-Type": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      "Content-Disposition": `attachment; filename="performance_${month}_${year}.xlsx"`,
     });
 
-    res.send(csv);
+    res.send(buffer);
   }
 
   @Get("analytics")

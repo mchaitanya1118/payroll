@@ -295,8 +295,22 @@ export class PayslipsService {
       for (const e of riderEntries) {
         totalSingle += e.singleOrders;
         totalDouble += e.doubleOrders;
-        grossTotal += e.dailyAmount;
-        grossRevenue += e.companyAmount || 0;
+
+        // Recalculate using latest rates (RateConfig) or overrides (Rule B)
+        const batch = batches.find(b => b.id === e.batchId);
+        const rate = rateConfigs.find(rc => 
+          rc.batchNumber === batch?.batchNumber && 
+          rc.vehicleType === rider.vehicleType && 
+          rc.rateType === rider.rateType
+        );
+
+        const rRateS = e.riderRateSingle ?? rate?.riderRateSingle ?? 0;
+        const rRateD = e.riderRateDouble ?? rate?.riderRateDouble ?? 0;
+        const cRateS = e.companyRateSingle ?? rate?.companyRateSingle ?? 0;
+        const cRateD = e.companyRateDouble ?? rate?.companyRateDouble ?? 0;
+
+        grossTotal += (e.singleOrders * rRateS) + (e.doubleOrders * rRateD);
+        grossRevenue += (e.singleOrders * cRateS) + (e.doubleOrders * cRateD);
       }
 
       // Base values from existing slip or defaults
@@ -307,11 +321,12 @@ export class PayslipsService {
       const akama = existingSlip?.akama || 0;
       const fine = existingSlip?.fine || 0;
       const bankDeduction = existingSlip?.bankDeduction || 0;
+      const advanceDeduction = existingSlip?.advanceDeduction || 0;
 
       const netTotal =
         grossTotal +
         bonus -
-        (deductions + salesCash + carRent + akama + fine + bankDeduction);
+        (deductions + salesCash + carRent + akama + fine + bankDeduction + advanceDeduction);
 
       // Target Achievement logic (optimized)
       let targetOrders = 0;
@@ -560,11 +575,41 @@ export class PayslipsService {
     let grossTotal = 0;
     let grossRevenue = 0;
 
+    const rider = await this.prisma.rider.findUnique({
+      where: { id: riderId },
+    });
+
+    if (!rider) return null;
+
+    // Get all rate configs for this tenant
+    const rateConfigs = await this.prisma.rateConfig.findMany({
+      where: { tenantId }
+    });
+
+    // Get all batches for lookup
+    const batches = await this.prisma.batch.findMany({
+      where: { tenantId }
+    });
+
     for (const e of entries) {
       totalSingle += e.singleOrders;
       totalDouble += e.doubleOrders;
-      grossTotal += e.dailyAmount;
-      grossRevenue += e.companyAmount || 0;
+
+      // Recalculate using latest rates
+      const batch = batches.find(b => b.id === e.batchId);
+      const rate = rateConfigs.find(rc => 
+        rc.batchNumber === batch?.batchNumber && 
+        rc.vehicleType === rider.vehicleType && 
+        rc.rateType === rider.rateType
+      );
+
+      const rRateS = e.riderRateSingle ?? rate?.riderRateSingle ?? 0;
+      const rRateD = e.riderRateDouble ?? rate?.riderRateDouble ?? 0;
+      const cRateS = e.companyRateSingle ?? rate?.companyRateSingle ?? 0;
+      const cRateD = e.companyRateDouble ?? rate?.companyRateDouble ?? 0;
+
+      grossTotal += (e.singleOrders * rRateS) + (e.doubleOrders * rRateD);
+      grossRevenue += (e.singleOrders * cRateS) + (e.doubleOrders * cRateD);
     }
 
     const payslip = await this.prisma.payslip.findUnique({
@@ -582,12 +627,13 @@ export class PayslipsService {
     const akama = payslip.akama || 0;
     const fine = payslip.fine || 0;
     const bankDeduction = payslip.bankDeduction || 0;
+    const advanceDeduction = payslip.advanceDeduction || 0;
 
     // netTotal = gross + bonus - (all other deductions)
     const netTotal =
       grossTotal +
       bonus -
-      (deductions + salesCash + carRent + akama + fine + bankDeduction);
+      (deductions + salesCash + carRent + akama + fine + bankDeduction + advanceDeduction);
 
     // Calculate Target Achievement
     let targetOrders = 0;
@@ -596,10 +642,6 @@ export class PayslipsService {
     try {
       if (entries.length > 0) {
         const sampleEntry = entries[0];
-        const rider = await this.prisma.rider.findUnique({
-          where: { id: riderId },
-        });
-
         if (rider && rider.rateType === "TARGET") {
           // Get batch number from the sample entry
           const batch = await this.prisma.batch.findUnique({

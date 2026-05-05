@@ -144,6 +144,24 @@ export default function AdvancesPage() {
                 <CardTitle className="text-xl font-black uppercase italic tracking-tighter text-slate-900">Outstanding Records</CardTitle>
                 <CardDescription className="text-xs font-medium text-slate-500 mt-1">Total active loans: {advances.length}</CardDescription>
              </div>
+             <Button 
+               variant="outline" 
+               onClick={async () => {
+                 const token = localStorage.getItem('token');
+                 const res = await fetch(`/api/advances/export?companyCode=${activeTab}`, {
+                   headers: { 'Authorization': `Bearer ${token}` }
+                 });
+                 const blob = await res.blob();
+                 const url = window.URL.createObjectURL(blob);
+                 const a = document.createElement('a');
+                 a.href = url;
+                 a.download = `advance_ledger_${activeTab}.xlsx`;
+                 a.click();
+               }}
+               className="rounded-xl border-2 border-slate-200 font-black text-[10px] uppercase tracking-widest h-10 px-6 hover:bg-slate-50 transition-all"
+             >
+               Export Ledger
+             </Button>
           </div>
         </CardHeader>
         <CardContent className="p-0">

@@ -1,17 +1,12 @@
 import { Injectable } from "@nestjs/common";
 import { PrismaService } from "../prisma/prisma.service";
+import * as xlsx from "xlsx";
 
 @Injectable()
 export class ReportsService {
   constructor(private readonly prisma: PrismaService) {}
 
-  private escapeCsv(val: any): string {
-    if (val === null || val === undefined) return '""';
-    const str = String(val).replace(/"/g, '""');
-    return `"${str}"`;
-  }
-
-  async exportPayrollCsv(tenantId: string, month: number, year: number, companyCode?: string) {
+  async exportPayrollExcel(tenantId: string, month: number, year: number, companyCode?: string) {
     const where: any = { tenantId, month, year };
     if (companyCode) {
       where.rider = { companyCode };
@@ -22,51 +17,32 @@ export class ReportsService {
       include: { rider: true },
     });
 
-    const headers = [
-      "Rider ID",
-      "Rider Name",
-      "Vehicle Type",
-      "Single Orders",
-      "Double Orders",
-      "Gross Amount",
-      "Bonus",
-      "Deductions",
-      "Sales Cash",
-      "Car Rent",
-      "Akama",
-      "Fine",
-      "Bank Deduction",
-      "Net Total",
-      "Status",
-    ];
+    const data = slips.map((s) => ({
+      "Rider ID": s.rider.riderId,
+      "Rider Name": s.rider.riderName,
+      "Vehicle Type": s.rider.vehicleType,
+      "Single Orders": s.totalSingleOrders,
+      "Double Orders": s.totalDoubleOrders,
+      "Gross Amount": s.grossAmount,
+      "Bonus": s.bonus,
+      "Deductions": s.deductions,
+      "Sales Cash": s.salesCash,
+      "Car Rent": s.carRent,
+      "Akama": s.akama,
+      "Fine": s.fine,
+      "Bank Deduction": s.bankDeduction,
+      "Advance Deduction": s.advanceDeduction,
+      "Net Total": s.netTotal,
+      "Status": s.status,
+    }));
 
-    const rows = slips.map((s) => [
-      s.rider.riderId,
-      s.rider.riderName,
-      s.rider.vehicleType,
-      s.totalSingleOrders,
-      s.totalDoubleOrders,
-      s.grossAmount,
-      s.bonus,
-      s.deductions,
-      s.salesCash,
-      s.carRent,
-      s.akama,
-      s.fine,
-      s.bankDeduction,
-      s.netTotal,
-      s.status,
-    ]);
-
-    const csvContent = [
-      headers.map((h) => this.escapeCsv(h)).join(","),
-      ...rows.map((row) => row.map((cell) => this.escapeCsv(cell)).join(",")),
-    ].join("\n");
-
-    return csvContent;
+    const ws = xlsx.utils.json_to_sheet(data);
+    const wb = xlsx.utils.book_new();
+    xlsx.utils.book_append_sheet(wb, ws, "Payroll");
+    return xlsx.write(wb, { type: "buffer", bookType: "xlsx" });
   }
 
-  async exportRidersCsv(tenantId: string, companyCode?: string) {
+  async exportRidersExcel(tenantId: string, companyCode?: string) {
     const where: any = { tenantId };
     if (companyCode) {
       where.companyCode = companyCode;
@@ -76,30 +52,21 @@ export class ReportsService {
       where,
     });
 
-    const headers = [
-      "Rider ID",
-      "Rider Name",
-      "Vehicle Type",
-      "Rate Type",
-      "Company Code",
-      "Created At",
-    ];
+    const data = riders.map((r) => ({
+      "Rider ID": r.riderId,
+      "Rider Name": r.riderName,
+      "Email": r.email || "",
+      "Phone Number": r.phoneNumber || "",
+      "Vehicle Type": r.vehicleType,
+      "Rate Type": r.rateType,
+      "Company Code": r.companyCode || "",
+      "Created At": r.createdAt.toISOString(),
+    }));
 
-    const rows = riders.map((r) => [
-      r.riderId,
-      r.riderName,
-      r.vehicleType,
-      r.rateType,
-      r.companyCode || "",
-      r.createdAt.toISOString(),
-    ]);
-
-    const csvContent = [
-      headers.map((h) => this.escapeCsv(h)).join(","),
-      ...rows.map((row) => row.map((cell) => this.escapeCsv(cell)).join(",")),
-    ].join("\n");
-
-    return csvContent;
+    const ws = xlsx.utils.json_to_sheet(data);
+    const wb = xlsx.utils.book_new();
+    xlsx.utils.book_append_sheet(wb, ws, "Riders");
+    return xlsx.write(wb, { type: "buffer", bookType: "xlsx" });
   }
 
   async getRidersReport(tenantId: string, month: number, year: number, companyCode?: string) {
@@ -135,47 +102,35 @@ export class ReportsService {
     return { data, totals };
   }
 
-  async exportPerformanceCsv(tenantId: string, month: number, year: number, companyCode?: string) {
+  async exportPerformanceExcel(tenantId: string, month: number, year: number, companyCode?: string) {
     const report = await this.getRidersReport(tenantId, month, year, companyCode);
     
-    const headers = [
-      "Rider ID",
-      "Rider Name",
-      "Single Rides",
-      "Double Rides",
-      "Paid Amount",
-      "Profit"
-    ];
-
-    const rows = report.data.map((r) => [
-      r.riderId,
-      r.riderName,
-      r.singleRides,
-      r.doubleRides,
-      r.paidAmount,
-      r.profit,
-    ]);
+    const data = report.data.map((r) => ({
+      "Rider ID": r.riderId,
+      "Rider Name": r.riderName,
+      "Single Rides": r.singleRides,
+      "Double Rides": r.doubleRides,
+      "Paid Amount": r.paidAmount,
+      "Profit": r.profit,
+    }));
 
     // Add totals row
-    rows.push([
-      "TOTALS",
-      "",
-      report.totals.singleRides,
-      report.totals.doubleRides,
-      report.totals.paidAmount,
-      report.totals.profit,
-    ]);
+    data.push({
+      "Rider ID": "TOTALS",
+      "Rider Name": "",
+      "Single Rides": report.totals.singleRides,
+      "Double Rides": report.totals.doubleRides,
+      "Paid Amount": report.totals.paidAmount,
+      "Profit": report.totals.profit,
+    } as any);
 
-    const csvContent = [
-      headers.map((h) => this.escapeCsv(h)).join(","),
-      ...rows.map((row) => row.map((cell) => this.escapeCsv(cell)).join(",")),
-    ].join("\n");
-
-    return csvContent;
+    const ws = xlsx.utils.json_to_sheet(data);
+    const wb = xlsx.utils.book_new();
+    xlsx.utils.book_append_sheet(wb, ws, "Performance");
+    return xlsx.write(wb, { type: "buffer", bookType: "xlsx" });
   }
 
   async getAnalyticsSummary(tenantId: string, monthParam?: number, yearParam?: number, companyCode?: string) {
-    console.log(`[ReportsService] Generating analytics for tenant: ${tenantId} Period: ${monthParam}/${yearParam} Company: ${companyCode}`);
     try {
       const now = new Date();
       const currentMonth = monthParam || now.getMonth() + 1;

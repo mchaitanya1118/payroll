@@ -122,7 +122,7 @@ export default function UploadPage() {
             <div className="flex flex-wrap gap-4 mb-10 justify-center">
                 <div className="text-left space-y-1.5">
                     <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest pl-1">Target Month</Label>
-                    <Select value={month.toString()} onValueChange={(v) => setMonth(parseInt(v))}>
+                    <Select value={month.toString()} onValueChange={(v) => v && setMonth(parseInt(v))}>
                         <SelectTrigger className="h-11 bg-white border-slate-200 font-bold rounded-xl w-32 md:w-40 shadow-sm focus:ring-blue-500">
                             <SelectValue />
                         </SelectTrigger>
@@ -133,7 +133,7 @@ export default function UploadPage() {
                 </div>
                 <div className="text-left space-y-1.5">
                     <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest pl-1">Target Year</Label>
-                    <Select value={year.toString()} onValueChange={(v) => setYear(parseInt(v))}>
+                    <Select value={year.toString()} onValueChange={(v) => v && setYear(parseInt(v))}>
                         <SelectTrigger className="h-11 bg-white border-slate-200 font-bold rounded-xl w-24 md:w-32 shadow-sm focus:ring-blue-500">
                             <SelectValue />
                         </SelectTrigger>

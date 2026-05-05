@@ -1,5 +1,6 @@
 import { Injectable, NotFoundException } from "@nestjs/common";
 import { PrismaService } from "../prisma/prisma.service";
+import * as xlsx from "xlsx";
 
 @Injectable()
 export class AdvancesService {
@@ -72,5 +73,24 @@ export class AdvancesService {
     return this.prisma.advance.delete({
       where: { id },
     });
+  }
+
+  async exportLedgerExcel(tenantId: string, companyCode?: string) {
+    const advances = await this.findAll(tenantId, undefined, companyCode);
+    
+    const data = advances.map(a => ({
+      "Pilot ID": a.rider.riderId,
+      "Pilot Name": a.rider.riderName,
+      "Company": a.rider.companyCode || "N/A",
+      "Total Amount": a.amount,
+      "Remaining Balance": a.balance,
+      "Reason": a.reason || "",
+      "Date Issued": a.createdAt.toISOString()
+    }));
+
+    const ws = xlsx.utils.json_to_sheet(data);
+    const wb = xlsx.utils.book_new();
+    xlsx.utils.book_append_sheet(wb, ws, "Advance Ledger");
+    return xlsx.write(wb, { type: "buffer", bookType: "xlsx" });
   }
 }

@@ -10,7 +10,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Users, Trash2, Plus, Pencil, Building, ShieldCheck, ArrowRight, Search, Upload } from 'lucide-react';
+import { Users, Trash2, Plus, Pencil, Building, ShieldCheck, ArrowRight, Search, Upload, Mail, Phone } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
@@ -230,7 +230,7 @@ export default function RidersPage() {
                         const url = window.URL.createObjectURL(blob);
                         const a = document.createElement('a');
                         a.href = url;
-                        a.download = `riders_directory.csv`;
+                        a.download = `riders_directory.xlsx`;
                         a.click();
                     });
                 }}
@@ -461,6 +461,19 @@ export default function RidersPage() {
                   <p className="text-sm font-bold text-slate-800">{toTitleCase(r.riderName)}</p>
                 </div>
 
+                <div className="space-y-2">
+                   {r.email && (
+                     <div className="flex items-center gap-2 text-xs text-slate-500">
+                        <Mail size={14} className="text-slate-400" /> {r.email}
+                     </div>
+                   )}
+                   {r.phoneNumber && (
+                     <div className="flex items-center gap-2 text-xs text-slate-500">
+                        <Phone size={14} className="text-slate-400" /> {r.phoneNumber}
+                     </div>
+                   )}
+                </div>
+
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">Company</p>
@@ -498,6 +511,7 @@ export default function RidersPage() {
               <TableRow className="bg-slate-900/5 hover:bg-slate-900/5 border-b border-slate-200/60">
                 <TableHead className="font-black text-slate-900 text-center w-32 tracking-widest text-[10px] uppercase h-14">RIDER ID</TableHead>
                 <TableHead className="font-black text-slate-900 tracking-widest text-[10px] uppercase h-14">PILOT NAME</TableHead>
+                <TableHead className="font-black text-slate-900 tracking-widest text-[10px] uppercase h-14">CONTACT INFO</TableHead>
                 <TableHead className="font-black text-slate-900 text-center tracking-widest text-[10px] uppercase h-14">COMPANY</TableHead>
                 <TableHead className="font-black text-slate-900 text-center tracking-widest text-[10px] uppercase h-14">VEHICLE</TableHead>
                 <TableHead className="font-black text-slate-900 text-right tracking-widest text-[10px] uppercase h-14 px-8">ACTION</TableHead>
@@ -509,6 +523,20 @@ export default function RidersPage() {
                   <TableCell className="font-black text-slate-400 text-center tabular-nums">{r.riderId}</TableCell>
                   <TableCell className="font-bold text-slate-900 tabular-nums tracking-tight">
                     {toTitleCase(r.riderName)}
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex flex-col gap-1">
+                       {r.email && (
+                         <div className="flex items-center gap-2 text-[10px] font-bold text-slate-500">
+                            <Mail size={12} className="text-slate-300" /> {r.email}
+                         </div>
+                       )}
+                       {r.phoneNumber && (
+                         <div className="flex items-center gap-2 text-[10px] font-bold text-slate-500">
+                            <Phone size={12} className="text-slate-300" /> {r.phoneNumber}
+                         </div>
+                       )}
+                    </div>
                   </TableCell>
                   <TableCell className="text-center">
                     {r.companyCode ? (
@@ -549,7 +577,7 @@ export default function RidersPage() {
               ))}
               {riders.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={5} className="text-center text-slate-400 py-20 italic font-medium">
+                  <TableCell colSpan={6} className="text-center text-slate-400 py-20 italic font-medium">
                     No riders found matching your criteria.
                   </TableCell>
                 </TableRow>

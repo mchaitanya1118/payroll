@@ -97,18 +97,18 @@ export default function ReportsPage() {
       if (type === 'payroll') {
         url = `/reports/payroll/export?month=${month}&year=${year}`;
         if (companyFilter !== 'ALL') url += `&companyCode=${companyFilter}`;
-        filename = `payroll_report_${month}_${year}.csv`;
+        filename = `payroll_report_${month}_${year}.xlsx`;
       } else if (type === 'riders') {
         url = `/reports/riders/export`;
         if (companyFilter !== 'ALL') url += `?companyCode=${companyFilter}`;
-        filename = `riders_directory.csv`;
+        filename = `riders_directory.xlsx`;
       } else if (type === 'rates') {
         url = `/rates/export`;
         filename = `rate_configurations.xlsx`;
       } else if (type === 'performance') {
         url = `/reports/performance/export?month=${month}&year=${year}`;
         if (companyFilter !== 'ALL') url += `&companyCode=${companyFilter}`;
-        filename = `riders_performance_${month}_${year}.csv`;
+        filename = `riders_performance_${month}_${year}.xlsx`;
       }
 
       const response = await api.get(url, { responseType: 'blob' });
@@ -144,7 +144,7 @@ export default function ReportsPage() {
         <div className="flex flex-row gap-2 md:gap-3 w-full md:w-auto overflow-x-auto scrollbar-hide">
           <div className="space-y-1">
             <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest pl-1">Month</Label>
-            <Select value={month.toString()} onValueChange={(v) => setMonth(parseInt(v))}>
+            <Select value={month.toString()} onValueChange={(v) => v && setMonth(parseInt(v))}>
               <SelectTrigger className="h-9 bg-white border-slate-200 font-bold rounded-xl w-24 md:w-32 shadow-sm">
                 <SelectValue />
               </SelectTrigger>
@@ -155,7 +155,7 @@ export default function ReportsPage() {
           </div>
           <div className="space-y-1">
             <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest pl-1">Year</Label>
-            <Select value={year.toString()} onValueChange={(v) => setYear(parseInt(v))}>
+            <Select value={year.toString()} onValueChange={(v) => v && setYear(parseInt(v))}>
               <SelectTrigger className="h-9 bg-white border-slate-200 font-bold rounded-xl w-20 md:w-28 shadow-sm">
                 <SelectValue />
               </SelectTrigger>
