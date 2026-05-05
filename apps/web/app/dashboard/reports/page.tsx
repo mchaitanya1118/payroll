@@ -30,6 +30,7 @@ import { toast } from 'sonner';
 import api from '@/lib/api';
 import { useCurrency } from '@/hooks/useCurrency';
 import { cn } from '@/lib/utils';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 export default function ReportsPage() {
   const [month, setMonth] = useState(new Date().getMonth() + 1);
@@ -38,12 +39,19 @@ export default function ReportsPage() {
   const [reportData, setReportData] = useState<any[]>([]);
   const [totals, setTotals] = useState<any>(null);
   const [reportLoading, setReportLoading] = useState(false);
+  const [companyFilter, setCompanyFilter] = useState('ALL');
+  const [availableCompanies, setAvailableCompanies] = useState<string[]>([]);
   const { format } = useCurrency();
 
   const fetchReportData = useCallback(async () => {
     setReportLoading(true);
     try {
-      const response = await api.get(`/reports/riders/data?month=${month}&year=${year}`);
+      const params = new URLSearchParams();
+      params.append('month', month.toString());
+      params.append('year', year.toString());
+      if (companyFilter !== 'ALL') params.append('companyCode', companyFilter);
+
+      const response = await api.get(`/reports/riders/data?${params.toString()}`);
       setReportData(response.data.data);
       setTotals(response.data.totals);
     } catch (error) {
@@ -52,7 +60,20 @@ export default function ReportsPage() {
     } finally {
       setReportLoading(false);
     }
-  }, [month, year]);
+  }, [month, year, companyFilter]);
+
+  const fetchCompanies = async () => {
+    try {
+      const res = await api.get('/riders/companies');
+      setAvailableCompanies(res.data);
+    } catch (error) {
+      console.error('Failed to load companies');
+    }
+  };
+
+  useEffect(() => {
+    fetchCompanies();
+  }, []);
 
   useEffect(() => {
     fetchReportData();
@@ -75,15 +96,18 @@ export default function ReportsPage() {
 
       if (type === 'payroll') {
         url = `/reports/payroll/export?month=${month}&year=${year}`;
+        if (companyFilter !== 'ALL') url += `&companyCode=${companyFilter}`;
         filename = `payroll_report_${month}_${year}.csv`;
       } else if (type === 'riders') {
         url = `/reports/riders/export`;
+        if (companyFilter !== 'ALL') url += `?companyCode=${companyFilter}`;
         filename = `riders_directory.csv`;
       } else if (type === 'rates') {
         url = `/rates/export`;
         filename = `rate_configurations.xlsx`;
       } else if (type === 'performance') {
         url = `/reports/performance/export?month=${month}&year=${year}`;
+        if (companyFilter !== 'ALL') url += `&companyCode=${companyFilter}`;
         filename = `riders_performance_${month}_${year}.csv`;
       }
 
@@ -142,6 +166,27 @@ export default function ReportsPage() {
           </div>
         </div>
       </div>
+
+      {/* Dynamic Company Tabs */}
+      <Tabs value={companyFilter} onValueChange={setCompanyFilter} className="w-full">
+        <TabsList className="bg-slate-100/50 p-1 rounded-2xl border border-slate-200/50 overflow-x-auto flex-nowrap justify-start h-auto">
+          <TabsTrigger 
+            value="ALL" 
+            className="rounded-xl px-6 py-2.5 text-[10px] font-black uppercase tracking-widest data-[state=active]:bg-slate-900 data-[state=active]:text-white transition-all duration-300"
+          >
+            All Entities
+          </TabsTrigger>
+          {availableCompanies.map(company => (
+            <TabsTrigger 
+              key={company} 
+              value={company}
+              className="rounded-xl px-6 py-2.5 text-[10px] font-black uppercase tracking-widest data-[state=active]:bg-slate-900 data-[state=active]:text-white transition-all duration-300"
+            >
+              {company}
+            </TabsTrigger>
+          ))}
+        </TabsList>
+      </Tabs>
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
         {/* Monthly Payroll Card */}

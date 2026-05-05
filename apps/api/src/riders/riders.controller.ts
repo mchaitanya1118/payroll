@@ -45,6 +45,11 @@ export class RidersController {
     return this.ridersService.getRidersCount(req.user.tenantId);
   }
 
+  @Get("companies")
+  async getCompanies(@Request() req: any) {
+    return this.ridersService.getCompanies(req.user.tenantId);
+  }
+
   @Delete(":id")
   @Roles(UserRole.ADMIN)
   async deleteRider(@Request() req: any, @Param("id") id: string) {

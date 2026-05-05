@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import api from '@/lib/api';
 import { useAuthStore } from '@/store/useAuthStore';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -30,7 +30,8 @@ import {
   QrCode,
   Download,
   Settings,
-  ArrowRight
+  ArrowRight,
+  Upload
 } from 'lucide-react';
 import { 
   Dialog, 
@@ -81,6 +82,8 @@ export default function SettingsPage() {
   const [editingRate, setEditingRate] = useState<any>(null);
   const [editorLoading, setEditorLoading] = useState(false);
   const [exportLoading, setExportLoading] = useState(false);
+  const [importLoading, setImportLoading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Form States
   const [formBatch, setFormBatch] = useState('');
@@ -228,6 +231,36 @@ export default function SettingsPage() {
       toast.error('Failed to export rate configurations');
     } finally {
       setExportLoading(false);
+    }
+  };
+
+  const handleImportClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleFileImport = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    setImportLoading(true);
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+
+      const { data } = await api.post('/rates/import', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+
+      toast.success(data.message || 'Rates imported successfully');
+      fetchRates();
+    } catch (error: any) {
+      const msg = error.response?.data?.message || 'Failed to import rate configurations';
+      toast.error(msg);
+    } finally {
+      setImportLoading(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
     }
   };
 
@@ -407,6 +440,23 @@ export default function SettingsPage() {
                   </div>
                 </div>
                 <div className="flex flex-row gap-3 w-full sm:w-auto overflow-x-auto scrollbar-hide">
+                  <input 
+                    type="file" 
+                    ref={fileInputRef} 
+                    className="hidden" 
+                    accept=".xlsx, .xls, .csv"
+                    onChange={handleFileImport}
+                  />
+                  <Button 
+                    onClick={handleImportClick} 
+                    disabled={importLoading} 
+                    variant="outline" 
+                    className="flex-1 md:flex-none border-2 border-slate-200 text-slate-500 rounded-2xl px-6 font-black text-[10px] uppercase tracking-[0.2em] transition-all active:scale-95 h-10 md:h-12"
+                  >
+                    {importLoading ? <Loader2 className="animate-spin" size={16} /> : <Upload size={16} />}
+                    <span className="ml-2 hidden sm:inline">Import Rates</span>
+                    <span className="ml-2 sm:hidden">Import</span>
+                  </Button>
                   <Button onClick={handleExport} disabled={exportLoading} variant="outline" className="flex-1 md:flex-none border-2 border-slate-900 text-slate-900 rounded-2xl px-6 font-black text-[10px] uppercase tracking-[0.2em] transition-all active:scale-95 h-10 md:h-12">
                     {exportLoading ? <Loader2 className="animate-spin" size={16} /> : <Download size={16} />}
                     <span className="ml-2 hidden sm:inline">Export List</span>

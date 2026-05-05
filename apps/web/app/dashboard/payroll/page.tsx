@@ -10,7 +10,8 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
-import { FileText, Calculator, CheckCircle2, Search, Users, Upload, Trash2, Loader2, Mail, ShieldCheck, TrendingUp, Download } from 'lucide-react';
+import { FileText, Calculator, CheckCircle2, Search, Users, Upload, Trash2, Loader2, Mail, ShieldCheck, TrendingUp, Download, Building } from 'lucide-react';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { toTitleCase } from '@/lib/format';
 import { cn } from '@/lib/utils';
 import { useAuthStore } from '@/store/useAuthStore';
@@ -30,6 +31,8 @@ export default function PayrollPage() {
   const [generating, setGenerating] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [companyFilter, setCompanyFilter] = useState('ALL');
+  const [availableCompanies, setAvailableCompanies] = useState<string[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const months = [
@@ -46,6 +49,7 @@ export default function PayrollPage() {
       params.append('month', month.toString());
       params.append('year', year.toString());
       if (search) params.append('search', search);
+      if (companyFilter !== 'ALL') params.append('companyCode', companyFilter);
 
       const [dashboardRes, slipsRes] = await Promise.all([
         api.get(`/payslips/dashboard?${params.toString()}`),
@@ -59,6 +63,15 @@ export default function PayrollPage() {
       console.error('Failed to load payroll dashboard', error);
     } finally {
       if (showLoading) setLoading(false);
+    }
+  };
+
+  const fetchCompanies = async () => {
+    try {
+      const res = await api.get('/riders/companies');
+      setAvailableCompanies(res.data);
+    } catch (error) {
+      console.error('Failed to load companies');
     }
   };
 
@@ -94,6 +107,7 @@ export default function PayrollPage() {
 
       toast.success('Excel processed successfully! Payroll data updated.');
       fetchDashboard(false);
+      fetchCompanies();
     } catch (error) {
       toast.error('Failed to process Excel file');
     } finally {
@@ -142,11 +156,15 @@ export default function PayrollPage() {
   };
 
   useEffect(() => {
+    fetchCompanies();
+  }, []);
+
+  useEffect(() => {
     const timer = setTimeout(() => {
         fetchDashboard();
     }, 300);
     return () => clearTimeout(timer);
-  }, [month, year, search]);
+  }, [month, year, search, companyFilter]);
 
   if (selectedRiderId) {
     return (
@@ -210,6 +228,31 @@ export default function PayrollPage() {
               </Button>
             )}
         </div>
+      </div>
+
+      {/* Company Tabs */}
+      <div className="w-full">
+        <Tabs defaultValue="ALL" value={companyFilter} onValueChange={setCompanyFilter} className="w-full">
+          <div className="flex items-center justify-between mb-4">
+            <TabsList className="bg-slate-100/50 p-1 rounded-2xl border border-slate-200/60 backdrop-blur-sm overflow-x-auto scrollbar-hide max-w-full justify-start h-auto flex-wrap sm:flex-nowrap">
+              <TabsTrigger 
+                value="ALL" 
+                className="rounded-xl px-6 py-2.5 font-black text-[10px] uppercase tracking-widest transition-all data-[state=active]:bg-white data-[state=active]:text-emerald-600 data-[state=active]:shadow-lg"
+              >
+                All Entities
+              </TabsTrigger>
+              {availableCompanies.map(company => (
+                <TabsTrigger 
+                  key={company} 
+                  value={company}
+                  className="rounded-xl px-6 py-2.5 font-black text-[10px] uppercase tracking-widest transition-all data-[state=active]:bg-white data-[state=active]:text-emerald-600 data-[state=active]:shadow-lg"
+                >
+                  {company}
+                </TabsTrigger>
+              ))}
+            </TabsList>
+          </div>
+        </Tabs>
       </div>
 
         {/* Summary Stat Cards */}
@@ -348,8 +391,13 @@ export default function PayrollPage() {
                     </div>
                     <div className="flex items-center gap-1.5">
                       <Badge variant="outline" className="text-[9px] text-slate-400 uppercase font-black tracking-widest px-1.5 h-4 border-slate-200 bg-white">
-                        {slip.rider?.vehicleType || 'Unknown'}
+                        {slip.rider?.companyCode ? slip.rider.companyCode : (slip.rider?.vehicleType || 'Unknown')}
                       </Badge>
+                      {slip.rider?.companyCode && (
+                        <Badge variant="outline" className="text-[9px] text-slate-300 uppercase font-black tracking-widest px-1.5 h-4 border-slate-100 bg-white ml-1">
+                          {slip.rider?.vehicleType}
+                        </Badge>
+                      )}
                       {(slip.targetOrders > 0) && (
                         <Badge variant="outline" className={`text-[9px] uppercase font-black tracking-widest px-1.5 h-4 ${slip.targetAchieved ? 'bg-emerald-500 text-white border-emerald-500' : 'bg-white text-slate-400'}`}>
                           {slip.totalSingleOrders || 0} / {slip.targetOrders}
@@ -428,7 +476,11 @@ export default function PayrollPage() {
              <Button 
                 variant="outline"
                 onClick={() => {
-                  const url = `/api/reports/payroll/export?month=${month}&year=${year}`;
+                  const params = new URLSearchParams();
+                  params.append('month', month.toString());
+                  params.append('year', year.toString());
+                  if (companyFilter !== 'ALL') params.append('companyCode', companyFilter);
+                  const url = `/api/reports/payroll/export?${params.toString()}`;
                   const token = localStorage.getItem('token');
                   fetch(url, { headers: { 'Authorization': `Bearer ${token}` } })
                   .then(res => res.blob())

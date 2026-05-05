@@ -15,19 +15,34 @@ export class AdvancesService {
     });
   }
 
-  async findAll(tenantId: string, search?: string) {
+  async findAll(tenantId: string, search?: string, companyCode?: string) {
+    const where: any = { tenantId };
+
+    if (companyCode) {
+      where.rider = { companyCode };
+    }
+
+    if (search) {
+      const searchFilter = {
+        OR: [
+          { riderId: { contains: search, mode: 'insensitive' } },
+          { riderName: { contains: search, mode: 'insensitive' } },
+        ]
+      };
+      
+      if (where.rider) {
+        where.AND = [
+          { rider: where.rider },
+          { rider: searchFilter }
+        ];
+        delete where.rider;
+      } else {
+        where.rider = searchFilter;
+      }
+    }
+
     return this.prisma.advance.findMany({
-      where: {
-        tenantId,
-        ...(search ? {
-          rider: {
-            OR: [
-              { riderId: { contains: search, mode: 'insensitive' } },
-              { riderName: { contains: search, mode: 'insensitive' } },
-            ]
-          }
-        } : {})
-      },
+      where,
       include: {
         rider: true,
       },

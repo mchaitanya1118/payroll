@@ -15,12 +15,14 @@ import {
   Calendar,
   User,
   ArrowUpRight,
-  Info
+  Info,
+  Building
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Skeleton } from '@/components/ui/skeleton';
 import { toast } from 'sonner';
 import { useCurrency } from '@/hooks/useCurrency';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 export default function AdvancesPage() {
   const { format } = useCurrency();
@@ -28,6 +30,8 @@ export default function AdvancesPage() {
   const [riders, setRiders] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
+  const [activeTab, setActiveTab] = useState('ALL');
+  const [companies, setCompanies] = useState<string[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   
   // Form state
@@ -40,12 +44,14 @@ export default function AdvancesPage() {
   const fetchData = async () => {
     setLoading(true);
     try {
-      const [advancesRes, ridersRes] = await Promise.all([
-        api.get(`/advances?search=${search}`),
-        api.get('/riders')
+      const [advancesRes, ridersRes, companiesRes] = await Promise.all([
+        api.get(`/advances?search=${search}&companyCode=${activeTab}`),
+        api.get('/riders'),
+        api.get('/riders/companies')
       ]);
       setAdvances(advancesRes.data);
       setRiders(ridersRes.data);
+      setCompanies(companiesRes.data);
     } catch (error) {
       toast.error('Failed to fetch advances');
     } finally {
@@ -55,7 +61,7 @@ export default function AdvancesPage() {
 
   useEffect(() => {
     fetchData();
-  }, [search]);
+  }, [search, activeTab]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -107,6 +113,29 @@ export default function AdvancesPage() {
         </Button>
       </div>
 
+      <div className="flex flex-col md:flex-row justify-between items-center gap-6">
+         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full md:w-auto">
+            <TabsList className="bg-white/50 backdrop-blur-md p-1 rounded-2xl h-auto border border-white/60 shadow-sm flex flex-wrap gap-1">
+              <TabsTrigger value="ALL" className="rounded-xl px-6 py-2.5 font-black text-[10px] uppercase tracking-[0.2em] data-[state=active]:bg-slate-900 data-[state=active]:text-white data-[state=active]:shadow-lg transition-all">ALL ENTITIES</TabsTrigger>
+              {companies.map(company => (
+                <TabsTrigger key={company} value={company} className="rounded-xl px-6 py-2.5 font-black text-[10px] uppercase tracking-[0.2em] data-[state=active]:bg-emerald-500 data-[state=active]:text-white data-[state=active]:shadow-lg transition-all">
+                  {company}
+                </TabsTrigger>
+              ))}
+            </TabsList>
+         </Tabs>
+
+         <div className="relative group w-full md:w-80">
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-emerald-500 transition-colors" size={18} />
+            <Input 
+              placeholder="Search by rider name or ID..." 
+              className="pl-12 h-12 bg-white/60 border-none rounded-2xl text-sm font-bold shadow-sm focus-visible:ring-2 focus-visible:ring-emerald-500 transition-all italic"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
+         </div>
+      </div>
+
       {/* Main Content */}
       <Card className="border-none shadow-2xl rounded-[2.5rem] bg-white/80 backdrop-blur-xl overflow-hidden border border-white/60">
         <CardHeader className="p-8 pb-4">
@@ -114,15 +143,6 @@ export default function AdvancesPage() {
              <div>
                 <CardTitle className="text-xl font-black uppercase italic tracking-tighter text-slate-900">Outstanding Records</CardTitle>
                 <CardDescription className="text-xs font-medium text-slate-500 mt-1">Total active loans: {advances.length}</CardDescription>
-             </div>
-             <div className="relative group w-full md:w-80">
-                <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-emerald-500 transition-colors" size={18} />
-                <Input 
-                  placeholder="Search by rider name or ID..." 
-                  className="pl-12 h-12 bg-slate-100/50 border-none rounded-xl text-sm focus-visible:ring-2 focus-visible:ring-emerald-500 transition-all"
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                />
              </div>
           </div>
         </CardHeader>
@@ -147,7 +167,7 @@ export default function AdvancesPage() {
                 ) : advances.length === 0 ? (
                   <tr>
                     <td colSpan={6} className="p-20 text-center text-slate-400 italic text-sm">
-                      No advance records found.
+                      No advance records found for this selection.
                     </td>
                   </tr>
                 ) : (
@@ -165,7 +185,10 @@ export default function AdvancesPage() {
                              {advance.rider.riderName.charAt(0)}
                           </div>
                           <div>
-                            <p className="text-sm font-black text-slate-900 leading-tight">{advance.rider.riderName}</p>
+                            <div className="flex items-center gap-2">
+                               <p className="text-sm font-black text-slate-900 leading-tight">{advance.rider.riderName}</p>
+                               <span className="text-[9px] px-1.5 py-0.5 bg-slate-100 text-slate-500 rounded font-black uppercase tracking-widest">{advance.rider.companyCode || 'IND'}</span>
+                            </div>
                             <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1">ID: {advance.rider.riderId}</p>
                           </div>
                         </div>

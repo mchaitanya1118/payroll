@@ -24,16 +24,18 @@ export class ReportsController {
     @Query("month") month: string,
     @Query("year") year: string,
     @Res() res: any,
+    @Query("companyCode") companyCode?: string,
   ) {
     const csv = await this.reportsService.exportPayrollCsv(
       req.user.tenantId,
       parseInt(month),
       parseInt(year),
+      companyCode,
     );
 
     res.set({
       "Content-Type": "text/csv",
-      "Content-Disposition": `attachment; filename="payroll_${month}_${year}.csv"`,
+      "Content-Disposition": `attachment; filename="payroll_${month}_${year}${companyCode ? `_${companyCode}` : ""}.csv"`,
     });
 
     res.send(csv);
@@ -41,12 +43,16 @@ export class ReportsController {
 
   @Get("riders/export")
   @Roles(UserRole.ADMIN)
-  async exportRiders(@Request() req: any, @Res() res: any) {
-    const csv = await this.reportsService.exportRidersCsv(req.user.tenantId);
+  async exportRiders(
+    @Request() req: any, 
+    @Res() res: any,
+    @Query("companyCode") companyCode?: string,
+  ) {
+    const csv = await this.reportsService.exportRidersCsv(req.user.tenantId, companyCode);
 
     res.set({
       "Content-Type": "text/csv",
-      "Content-Disposition": 'attachment; filename="riders_directory.csv"',
+      "Content-Disposition": `attachment; filename="riders_directory${companyCode ? `_${companyCode}` : ""}.csv"`,
     });
 
     res.send(csv);
@@ -57,11 +63,13 @@ export class ReportsController {
     @Request() req: any,
     @Query("month") month: string,
     @Query("year") year: string,
+    @Query("companyCode") companyCode?: string,
   ) {
     return this.reportsService.getRidersReport(
       req.user.tenantId,
       parseInt(month),
       parseInt(year),
+      companyCode,
     );
   }
 
@@ -72,11 +80,13 @@ export class ReportsController {
     @Query("month") month: string,
     @Query("year") year: string,
     @Res() res: any,
+    @Query("companyCode") companyCode?: string,
   ) {
     const csv = await this.reportsService.exportPerformanceCsv(
       req.user.tenantId,
       parseInt(month),
       parseInt(year),
+      companyCode,
     );
 
     res.set({
@@ -92,15 +102,17 @@ export class ReportsController {
     @Request() req: any,
     @Query("month") month?: string,
     @Query("year") year?: string,
+    @Query("companyCode") companyCode?: string,
   ) {
     try {
       return await this.reportsService.getAnalyticsSummary(
         req.user.tenantId,
         month ? parseInt(month) : undefined,
         year ? parseInt(year) : undefined,
+        companyCode,
       );
     } catch (error: any) {
-      console.error('[ReportsController] Analytics Failure:', error);
+      console.error("[ReportsController] Analytics Failure:", error);
       throw new Error(`Analytics Engine Error: ${error.message}`);
     }
   }

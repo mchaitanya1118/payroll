@@ -11,9 +11,14 @@ export class ReportsService {
     return `"${str}"`;
   }
 
-  async exportPayrollCsv(tenantId: string, month: number, year: number) {
+  async exportPayrollCsv(tenantId: string, month: number, year: number, companyCode?: string) {
+    const where: any = { tenantId, month, year };
+    if (companyCode) {
+      where.rider = { companyCode };
+    }
+
     const slips = await this.prisma.payslip.findMany({
-      where: { tenantId, month, year },
+      where,
       include: { rider: true },
     });
 
@@ -61,9 +66,14 @@ export class ReportsService {
     return csvContent;
   }
 
-  async exportRidersCsv(tenantId: string) {
+  async exportRidersCsv(tenantId: string, companyCode?: string) {
+    const where: any = { tenantId };
+    if (companyCode) {
+      where.companyCode = companyCode;
+    }
+
     const riders = await this.prisma.rider.findMany({
-      where: { tenantId },
+      where,
     });
 
     const headers = [
@@ -92,9 +102,14 @@ export class ReportsService {
     return csvContent;
   }
 
-  async getRidersReport(tenantId: string, month: number, year: number) {
+  async getRidersReport(tenantId: string, month: number, year: number, companyCode?: string) {
+    const where: any = { tenantId, month, year };
+    if (companyCode) {
+      where.rider = { companyCode };
+    }
+
     const slips = await this.prisma.payslip.findMany({
-      where: { tenantId, month, year },
+      where,
       include: { rider: true },
     });
 
@@ -120,8 +135,8 @@ export class ReportsService {
     return { data, totals };
   }
 
-  async exportPerformanceCsv(tenantId: string, month: number, year: number) {
-    const report = await this.getRidersReport(tenantId, month, year);
+  async exportPerformanceCsv(tenantId: string, month: number, year: number, companyCode?: string) {
+    const report = await this.getRidersReport(tenantId, month, year, companyCode);
     
     const headers = [
       "Rider ID",
@@ -159,8 +174,8 @@ export class ReportsService {
     return csvContent;
   }
 
-  async getAnalyticsSummary(tenantId: string, monthParam?: number, yearParam?: number) {
-    console.log(`[ReportsService] Generating analytics for tenant: ${tenantId} Period: ${monthParam}/${yearParam}`);
+  async getAnalyticsSummary(tenantId: string, monthParam?: number, yearParam?: number, companyCode?: string) {
+    console.log(`[ReportsService] Generating analytics for tenant: ${tenantId} Period: ${monthParam}/${yearParam} Company: ${companyCode}`);
     try {
       const now = new Date();
       const currentMonth = monthParam || now.getMonth() + 1;
@@ -174,8 +189,13 @@ export class ReportsService {
 
       const monthlyTrends = await Promise.all(
         months.map(async ({ month, year }) => {
+          const where: any = { tenantId, month, year };
+          if (companyCode) {
+            where.rider = { companyCode };
+          }
+          
           const slips = await this.prisma.payslip.findMany({
-            where: { tenantId, month, year },
+            where,
             select: {
               netTotal: true,
               grossRevenue: true,
@@ -196,8 +216,13 @@ export class ReportsService {
         }),
       );
 
+      const riderWhere: any = { tenantId };
+      if (companyCode) {
+        riderWhere.companyCode = companyCode;
+      }
+
       const riders = await this.prisma.rider.findMany({
-        where: { tenantId },
+        where: riderWhere,
         select: { vehicleType: true },
       });
 
@@ -206,12 +231,17 @@ export class ReportsService {
         return acc;
       }, {});
 
+      const topRidersWhere: any = {
+        tenantId,
+        month: currentMonth,
+        year: currentYear,
+      };
+      if (companyCode) {
+        topRidersWhere.rider = { companyCode };
+      }
+
       const topRidersSlips = await this.prisma.payslip.findMany({
-        where: {
-          tenantId,
-          month: currentMonth,
-          year: currentYear,
-        },
+        where: topRidersWhere,
         include: { rider: true },
         orderBy: { grossRevenue: "desc" },
         take: 5,
@@ -224,8 +254,12 @@ export class ReportsService {
       }));
 
       // Advanced Efficiency Metrics
+      const efficiencyWhere: any = { tenantId, month: currentMonth, year: currentYear };
+      if (companyCode) {
+        efficiencyWhere.rider = { companyCode };
+      }
       const currentMonthSlips = await this.prisma.payslip.findMany({
-        where: { tenantId, month: currentMonth, year: currentYear },
+        where: efficiencyWhere,
       });
 
       const totalAchieved = currentMonthSlips.filter(s => s.targetAchieved).length;

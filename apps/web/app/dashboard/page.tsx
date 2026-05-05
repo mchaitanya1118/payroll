@@ -8,6 +8,8 @@ import { motion } from 'framer-motion';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useCurrency } from '@/hooks/useCurrency';
 import { Button } from '@/components/ui/button';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { toast } from 'sonner';
 
 export default function DashboardPage() {
   const { format } = useCurrency();
@@ -29,6 +31,9 @@ export default function DashboardPage() {
   const [month, setMonth] = useState(new Date().getMonth() + 1);
   const [year, setYear] = useState(new Date().getFullYear());
 
+  const [companyFilter, setCompanyFilter] = useState('ALL');
+  const [availableCompanies, setAvailableCompanies] = useState<string[]>([]);
+
   const months = [
     { value: 1, label: 'Jan' }, { value: 2, label: 'Feb' }, { value: 3, label: 'Mar' },
     { value: 4, label: 'Apr' }, { value: 5, label: 'May' }, { value: 6, label: 'Jun' },
@@ -43,14 +48,19 @@ export default function DashboardPage() {
     
     // Fetch core stats - individual try/catch to ensure partial loading
     try {
-      const ridersRes = await api.get('/riders/count');
+      const ridersRes = await api.get(`/riders/count${companyFilter !== 'ALL' ? `?companyCode=${companyFilter}` : ''}`);
       setStats(prev => ({ ...prev, totalEmployees: ridersRes?.data ?? 0 }));
     } catch (e) {
       console.error('Workforce count fetch failed:', e);
     }
 
     try {
-      const dashboardRes = await api.get(`/payslips/dashboard?month=${month}&year=${year}`);
+      const params = new URLSearchParams();
+      params.append('month', month.toString());
+      params.append('year', year.toString());
+      if (companyFilter !== 'ALL') params.append('companyCode', companyFilter);
+
+      const dashboardRes = await api.get(`/payslips/dashboard?${params.toString()}`);
       const data = dashboardRes?.data ?? {};
       const summary = data.summary || {};
       
@@ -68,7 +78,12 @@ export default function DashboardPage() {
 
     // Fetch analytics separately
     try {
-      const analyticsRes = await api.get(`/reports/analytics?month=${month}&year=${year}`);
+      const params = new URLSearchParams();
+      params.append('month', month.toString());
+      params.append('year', year.toString());
+      if (companyFilter !== 'ALL') params.append('companyCode', companyFilter);
+
+      const analyticsRes = await api.get(`/reports/analytics?${params.toString()}`);
       if (analyticsRes?.data) {
         setAnalytics(analyticsRes.data);
       }
@@ -80,9 +95,22 @@ export default function DashboardPage() {
     }
   };
 
+  const fetchCompanies = async () => {
+    try {
+      const res = await api.get('/riders/companies');
+      setAvailableCompanies(res.data);
+    } catch (error) {
+      console.error('Failed to load companies');
+    }
+  };
+
+  useEffect(() => {
+    fetchCompanies();
+  }, []);
+
   useEffect(() => {
     fetchDashboardData();
-  }, [month, year]);
+  }, [month, year, companyFilter]);
 
   const cards = [
     { 
@@ -164,6 +192,27 @@ export default function DashboardPage() {
            )}
         </div>
       </div>
+
+      {/* Dynamic Company Tabs */}
+      <Tabs value={companyFilter} onValueChange={setCompanyFilter} className="w-full">
+        <TabsList className="bg-slate-100/50 p-1 rounded-2xl border border-slate-200/50 overflow-x-auto flex-nowrap justify-start h-auto">
+          <TabsTrigger 
+            value="ALL" 
+            className="rounded-xl px-6 py-2.5 text-[10px] font-black uppercase tracking-widest data-[state=active]:bg-slate-900 data-[state=active]:text-white transition-all duration-300"
+          >
+            All Entities
+          </TabsTrigger>
+          {availableCompanies.map(company => (
+            <TabsTrigger 
+              key={company} 
+              value={company}
+              className="rounded-xl px-6 py-2.5 text-[10px] font-black uppercase tracking-widest data-[state=active]:bg-slate-900 data-[state=active]:text-white transition-all duration-300"
+            >
+              {company}
+            </TabsTrigger>
+          ))}
+        </TabsList>
+      </Tabs>
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
         {loading ? (

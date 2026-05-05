@@ -27,8 +27,16 @@ export class AdvancesController {
   }
 
   @Get()
-  async findAll(@Request() req: any, @Query("search") search?: string) {
-    return this.advancesService.findAll(req.user.tenantId, search);
+  async findAll(
+    @Request() req: any,
+    @Query("search") search?: string,
+    @Query("companyCode") companyCode?: string
+  ) {
+    return this.advancesService.findAll(
+      req.user.tenantId,
+      search,
+      companyCode === 'ALL' ? undefined : companyCode
+    );
   }
 
   @Get("rider/:riderId")

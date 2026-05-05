@@ -29,6 +29,7 @@ export class UploadService {
     mapping?: Record<string, string>,
     payrollMonth?: number,
     payrollYear?: number,
+    ridersOnly?: boolean,
   ) {
     try {
       console.log(
@@ -164,19 +165,20 @@ export class UploadService {
                 : null,
             },
           });
-        } else if (
-          rider &&
-          (emailRaw || phoneRaw) &&
-          (!rider.email || !rider.phoneNumber)
-        ) {
-          // Update email or phone if they were missing
+        } else if (rider) {
           const updateData: any = {};
+
           if (emailRaw && !rider.email)
             updateData.email = String(emailRaw).trim().toLowerCase();
+
           if (phoneRaw && !rider.phoneNumber)
             updateData.phoneNumber = String(phoneRaw)
               .trim()
               .replace(/\s+/g, "");
+
+          if (companyRaw && String(companyRaw).trim() !== rider.companyCode) {
+            updateData.companyCode = String(companyRaw).trim();
+          }
 
           if (Object.keys(updateData).length > 0) {
             rider = await this.prisma.rider.update({
@@ -189,6 +191,14 @@ export class UploadService {
         if (riderIdentifier) {
           riderMap.set(riderIdentifier, rider);
         }
+      }
+
+      if (ridersOnly) {
+        return {
+          message: "Riders data processed successfully",
+          totalProcessed: rawData.length,
+          newRiders: newRidersCount,
+        };
       }
 
       for (let i = 0; i < rawData.length; i++) {

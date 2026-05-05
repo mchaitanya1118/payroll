@@ -79,6 +79,23 @@ export class UploadController {
     );
   }
 
+  @Post("riders")
+  @UseInterceptors(FileInterceptor("file"))
+  async uploadRiders(@Request() req: any, @UploadedFile() file: any) {
+    if (!file) {
+      throw new BadRequestException("No file uploaded");
+    }
+    const tenantId = req.user.tenantId;
+    return this.uploadService.processExcel(
+      file.buffer,
+      tenantId,
+      undefined,
+      undefined,
+      undefined,
+      true, // ridersOnly
+    );
+  }
+
   @Post("reset")
   @Roles(UserRole.ADMIN)
   async resetData(@Request() req: any) {

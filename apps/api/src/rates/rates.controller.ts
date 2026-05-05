@@ -8,7 +8,11 @@ import {
   UseGuards,
   Request,
   Res,
+  UseInterceptors,
+  UploadedFile,
+  BadRequestException,
 } from "@nestjs/common";
+import { FileInterceptor } from "@nestjs/platform-express";
 import { RatesService } from "./rates.service";
 import { JwtAuthGuard } from "../auth/jwt-auth.guard";
 import { RolesGuard } from "../auth/roles.guard";
@@ -41,6 +45,14 @@ export class RatesController {
   @Roles(UserRole.ADMIN)
   async upsert(@Request() req: any, @Body() body: any) {
     return this.ratesService.upsert(req.user.tenantId, body);
+  }
+
+  @Post("import")
+  @Roles(UserRole.ADMIN)
+  @UseInterceptors(FileInterceptor("file"))
+  async importRates(@Request() req: any, @UploadedFile() file: any) {
+    if (!file) throw new BadRequestException("No file uploaded");
+    return this.ratesService.importRates(req.user.tenantId, file.buffer);
   }
 
   @Delete(":id")

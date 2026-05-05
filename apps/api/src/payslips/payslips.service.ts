@@ -5,6 +5,7 @@ import {
 } from "@nestjs/common";
 import { PrismaService } from "../prisma/prisma.service";
 import { MailService } from "../mail/mail.service";
+import * as XLSX from 'xlsx';
 
 @Injectable()
 export class PayslipsService {
@@ -94,9 +95,10 @@ export class PayslipsService {
     month: number,
     year: number,
     search?: string,
+    companyCode?: string,
   ) {
     console.log(
-      `[PayslipsService] Fetching dashboard for month: ${month}, year: ${year}, search: ${search}`,
+      `[PayslipsService] Fetching dashboard for month: ${month}, year: ${year}, search: ${search}, company: ${companyCode}`,
     );
     if (!month || !year) {
       console.warn("[PayslipsService] Missing month or year");
@@ -105,11 +107,25 @@ export class PayslipsService {
 
     const where: any = { tenantId, month, year };
 
+    if (companyCode) {
+      where.rider = { companyCode };
+    }
+
     if (search) {
-      where.OR = [
+      const searchFilter = [
         { rider: { riderId: { contains: search, mode: "insensitive" } } },
         { rider: { riderName: { contains: search, mode: "insensitive" } } },
       ];
+      if (where.rider) {
+        // If companyCode is already filtering by rider, we need to merge the search
+        where.AND = [
+          { rider: where.rider },
+          { OR: searchFilter }
+        ];
+        delete where.rider;
+      } else {
+        where.OR = searchFilter;
+      }
     }
 
     // 1. Fetch aggregations and recent activity in parallel
@@ -118,21 +134,21 @@ export class PayslipsService {
 
     const [currentStats, prevStats, recentActivitySlips, activeSlipsCount] = await Promise.all([
       this.prisma.payslip.aggregate({
-        where: { tenantId, month, year },
+        where,
         _sum: { netTotal: true },
       }),
       this.prisma.payslip.aggregate({
-        where: { tenantId, month: prevMonth, year: prevYear },
+        where: { ...where, month: prevMonth, year: prevYear },
         _sum: { netTotal: true },
       }),
       this.prisma.payslip.findMany({
-        where: { tenantId },
+        where: { tenantId, rider: companyCode ? { companyCode } : undefined },
         orderBy: { updatedAt: "desc" },
         take: 5,
         include: { rider: true },
       }),
       this.prisma.payslip.count({
-        where: { tenantId, month, year },
+        where,
       }),
     ]);
 
@@ -160,13 +176,13 @@ export class PayslipsService {
     // Efficiently get counts for insights
     const [targetCount, noTargetCount, maxNetTotal] = await Promise.all([
       this.prisma.payslip.count({
-        where: { tenantId, month, year, rider: { rateType: "TARGET" } },
+        where: { ...where, rider: { ...where.rider, rateType: "TARGET" } },
       }),
       this.prisma.payslip.count({
-        where: { tenantId, month, year, rider: { rateType: "NO_TARGET" } },
+        where: { ...where, rider: { ...where.rider, rateType: "NO_TARGET" } },
       }),
       this.prisma.payslip.aggregate({
-        where: { tenantId, month, year },
+        where,
         _max: { netTotal: true },
       }),
     ]);
@@ -198,14 +214,28 @@ export class PayslipsService {
     month: number,
     year: number,
     search?: string,
+    companyCode?: string,
   ) {
     const where: any = { tenantId, month, year };
 
+    if (companyCode) {
+      where.rider = { companyCode };
+    }
+
     if (search) {
-      where.OR = [
+      const searchFilter = [
         { rider: { riderId: { contains: search, mode: "insensitive" } } },
         { rider: { riderName: { contains: search, mode: "insensitive" } } },
       ];
+      if (where.rider) {
+        where.AND = [
+          { rider: where.rider },
+          { OR: searchFilter }
+        ];
+        delete where.rider;
+      } else {
+        where.OR = searchFilter;
+      }
     }
 
     const slips = await this.prisma.payslip.findMany({
@@ -352,25 +382,68 @@ export class PayslipsService {
 
   async getPayslip(
     tenantId: string,
-    riderId: string,
+    riderIdRaw: string,
     month: number,
     year: number,
   ) {
-    // 1. Fetch Payslip summary
-    const payslip = await this.prisma.payslip.findUnique({
+    // 1. Resolve rider - try Pilot ID first, then fallback to internal ID
+    let rider = await this.prisma.rider.findUnique({
+      where: { tenantId_riderId: { tenantId, riderId: riderIdRaw } }
+    });
+
+    if (!rider) {
+      rider = await this.prisma.rider.findUnique({
+        where: { id: riderIdRaw }
+      });
+    }
+
+    if (!rider) {
+      throw new NotFoundException(`Rider with ID ${riderIdRaw} not found`);
+    }
+
+    const riderId = rider.id;
+
+    // 2. Fetch Payslip summary
+    let payslip = await this.prisma.payslip.findUnique({
       where: {
         tenantId_riderId_month_year: { tenantId, riderId, month, year },
       },
       include: {
-        rider: true,
+        rider: {
+          include: {
+            advances: {
+              where: { balance: { gt: 0 } }
+            }
+          }
+        },
       },
     });
 
+    // 2.1 If no payslip exists but rider does, auto-create a DRAFT record
     if (!payslip) {
-      throw new NotFoundException("Payslip not found");
+      console.log(`[getPayslip] Auto-creating DRAFT payslip for rider ${rider.riderName} (${month}/${year})`);
+      payslip = await this.prisma.payslip.create({
+        data: {
+          tenantId,
+          riderId,
+          month,
+          year,
+          status: "DRAFT",
+          netTotal: 0,
+        },
+        include: {
+          rider: {
+            include: {
+              advances: {
+                where: { balance: { gt: 0 } }
+              }
+            }
+          },
+        },
+      });
     }
 
-    // 2. Fetch all daily entries for that month/year (Rule B)
+    // 3. Fetch all daily entries for that month/year (Rule B)
     const entries = await this.prisma.dailyEntry.findMany({
       where: {
         riderId,
@@ -570,5 +643,111 @@ export class PayslipsService {
       },
       include: { rider: true },
     });
+  }
+
+  async getAdjustedSlips(tenantId: string, month: number, year: number, companyCode?: string) {
+    try {
+      console.log(`[getAdjustedSlips] params: tenantId=${tenantId}, month=${month}, year=${year}, company=${companyCode}`);
+      
+      const where: any = {
+        tenantId,
+        month,
+        year,
+        OR: [
+          { salesCash: { gt: 0 } },
+          { carRent: { gt: 0 } },
+          { akama: { gt: 0 } },
+          { fine: { gt: 0 } },
+          { deductions: { gt: 0 } },
+          { bonus: { gt: 0 } },
+          { bankDeduction: { gt: 0 } },
+          { advanceDeduction: { gt: 0 } },
+        ]
+      };
+
+      if (companyCode) {
+        where.rider = { companyCode };
+      }
+
+      return await this.prisma.payslip.findMany({
+        where,
+        include: { rider: true },
+        orderBy: { updatedAt: 'desc' }
+      });
+    } catch (error) {
+      console.error('[getAdjustedSlips] Error:', error);
+      throw error;
+    }
+  }
+
+  async exportAdjustments(tenantId: string, month: number, year: number) {
+    const slips = await this.prisma.payslip.findMany({
+      where: { tenantId, month, year },
+      include: { rider: true }
+    });
+
+    const data = slips.map(s => ({
+      'Pilot ID': s.rider.riderId,
+      'Name': s.rider.riderName,
+      'Company': s.rider.companyCode || 'N/A',
+      'Month': s.month,
+      'Year': s.year,
+      'Sales Cash': s.salesCash,
+      'Car Rent': s.carRent,
+      'Akama': s.akama,
+      'Fine': s.fine,
+      'Deduction': s.deductions,
+      'Bonus': s.bonus,
+      'Bank': s.bankDeduction,
+      'Advance': s.advanceDeduction
+    }));
+
+    const wb = XLSX.utils.book_new();
+    const ws = XLSX.utils.json_to_sheet(data);
+    XLSX.utils.book_append_sheet(wb, ws, 'Adjustments');
+    return XLSX.write(wb, { type: 'buffer', bookType: 'xlsx' });
+  }
+
+  async importAdjustments(tenantId: string, fileBuffer: Buffer) {
+    const workbook = XLSX.read(fileBuffer, { type: 'buffer' });
+    const sheet = workbook.Sheets[workbook.SheetNames[0]];
+    const rows = XLSX.utils.sheet_to_json(sheet);
+
+    let count = 0;
+    for (const row of rows as any[]) {
+      const pilotId = row['Pilot ID']?.toString();
+      const month = parseInt(row['Month']);
+      const year = parseInt(row['Year']);
+
+      if (!pilotId || isNaN(month) || isNaN(year)) continue;
+
+      const rider = await this.prisma.rider.findUnique({
+        where: { tenantId_riderId: { tenantId, riderId: pilotId } }
+      });
+
+      if (!rider) continue;
+
+      const payslip = await this.prisma.payslip.findUnique({
+        where: { tenantId_riderId_month_year: { tenantId, riderId: rider.id, month, year } }
+      });
+
+      if (!payslip) continue;
+
+      const dto = {
+        salesCash: parseFloat(row['Sales Cash']) || 0,
+        carRent: parseFloat(row['Car Rent']) || 0,
+        akama: parseFloat(row['Akama']) || 0,
+        fine: parseFloat(row['Fine']) || 0,
+        deductions: parseFloat(row['Deduction']) || 0,
+        bonus: parseFloat(row['Bonus']) || 0,
+        bankDeduction: parseFloat(row['Bank']) || 0,
+        advanceDeduction: parseFloat(row['Advance']) || 0,
+      };
+
+      await this.update(payslip.id, dto);
+      count++;
+    }
+
+    return { success: true, count, message: `Successfully updated ${count} records.` };
   }
 }

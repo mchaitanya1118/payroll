@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import api from '@/lib/api';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -10,9 +10,10 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Users, Trash2, Plus, Pencil, Building, ShieldCheck, ArrowRight } from 'lucide-react';
+import { Users, Trash2, Plus, Pencil, Building, ShieldCheck, ArrowRight, Search, Upload } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { formatDate, toTitleCase } from '@/lib/format';
 
 interface Rider {
@@ -30,6 +31,7 @@ interface Rider {
 export default function RidersPage() {
   const [riders, setRiders] = useState<Rider[]>([]);
   const [loading, setLoading] = useState(true);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   
   // Filtering States
   const [search, setSearch] = useState('');
@@ -57,19 +59,25 @@ export default function RidersPage() {
 
       const res = await api.get(`/riders?${params.toString()}`);
       setRiders(res.data);
-      
-      // Update available companies filter list if we don't have filters active 
-      // This is a simple way to populate the dropdown without a separate endpoint
-      if (search === '' && vehicleFilter === 'ALL' && companyFilter === 'ALL') {
-         const companies = Array.from(new Set(res.data.map((r: Rider) => r.companyCode).filter(Boolean))) as string[];
-         setAvailableCompanies(companies);
-      }
     } catch (error) {
       toast.error('Failed to fetch riders');
     } finally {
       setLoading(false);
     }
   };
+
+  const fetchCompanies = async () => {
+    try {
+      const res = await api.get('/riders/companies');
+      setAvailableCompanies(res.data);
+    } catch (error) {
+      console.error('Failed to load companies');
+    }
+  };
+
+  useEffect(() => {
+    fetchCompanies();
+  }, []);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -131,6 +139,7 @@ export default function RidersPage() {
       
       setOpen(false);
       fetchRiders();
+      fetchCompanies();
     } catch(err) {
       toast.error(editingId ? 'Failed to update rider.' : 'Failed to create rider. ID might already exist.');
     }
@@ -142,8 +151,39 @@ export default function RidersPage() {
       await api.delete(`/riders/${id}`);
       toast.success('Rider deleted securely.');
       fetchRiders();
+      fetchCompanies();
     } catch (err) {
       toast.error('Failed to delete rider.');
+    }
+  };
+
+  const handleImportClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleFileImport = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    try {
+      setLoading(true);
+      const formData = new FormData();
+      formData.append('file', file);
+
+      await api.post('/upload/riders', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+
+      toast.success('Pilots directory updated successfully!');
+      fetchRiders();
+      fetchCompanies();
+    } catch (error) {
+      toast.error('Failed to process Excel file. Ensure it contains Rider IDs.');
+    } finally {
+      setLoading(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
     }
   };
 
@@ -159,10 +199,28 @@ export default function RidersPage() {
           </div>
           
           <div className="flex flex-row gap-3 w-full md:w-auto overflow-x-auto scrollbar-hide">
+            <input 
+              type="file" 
+              ref={fileInputRef} 
+              className="hidden" 
+              accept=".xlsx, .xls, .csv"
+              onChange={handleFileImport}
+            />
+            <Button 
+                variant="outline"
+                onClick={handleImportClick}
+                disabled={loading}
+                className="flex-1 md:flex-none border-2 border-slate-200 text-slate-500 rounded-2xl px-6 font-black text-[10px] uppercase tracking-[0.2em] transition-all active:scale-95 h-10 md:h-12 flex items-center gap-2"
+            >
+                <Upload size={14} />
+                {loading ? '...' : 'Import'}
+            </Button>
             <Button 
                 variant="outline"
                 onClick={() => {
-                    const url = `/api/reports/riders/export`;
+                    const params = new URLSearchParams();
+                    if (companyFilter !== 'ALL') params.append('companyCode', companyFilter);
+                    const url = `/api/reports/riders/export?${params.toString()}`;
                     const token = localStorage.getItem('token');
                     fetch(url, {
                         headers: { 'Authorization': `Bearer ${token}` }
@@ -303,6 +361,31 @@ export default function RidersPage() {
           </DialogContent>
         </Dialog>
       
+      {/* Company Tabs */}
+      <div className="w-full">
+        <Tabs defaultValue="ALL" value={companyFilter} onValueChange={setCompanyFilter} className="w-full">
+          <div className="flex items-center justify-between mb-4">
+            <TabsList className="bg-slate-100/50 p-1 rounded-2xl border border-slate-200/60 backdrop-blur-sm overflow-x-auto scrollbar-hide max-w-full justify-start h-auto flex-wrap sm:flex-nowrap">
+              <TabsTrigger 
+                value="ALL" 
+                className="rounded-xl px-6 py-2.5 font-black text-[10px] uppercase tracking-widest transition-all data-[state=active]:bg-white data-[state=active]:text-emerald-600 data-[state=active]:shadow-lg"
+              >
+                All Pilots
+              </TabsTrigger>
+              {availableCompanies.map(company => (
+                <TabsTrigger 
+                  key={company} 
+                  value={company}
+                  className="rounded-xl px-6 py-2.5 font-black text-[10px] uppercase tracking-widest transition-all data-[state=active]:bg-white data-[state=active]:text-emerald-600 data-[state=active]:shadow-lg"
+                >
+                  {company}
+                </TabsTrigger>
+              ))}
+            </TabsList>
+          </div>
+        </Tabs>
+      </div>
+
       {/* Search, Filters and Stats Row */}
       <div className="flex flex-col lg:flex-row gap-6 items-start lg:items-center glass-card p-6 rounded-2xl mb-8 premium-shadow">
         {/* Quick Stat */}
@@ -319,38 +402,27 @@ export default function RidersPage() {
         <div className="flex flex-col md:flex-row gap-4 flex-1 w-full">
           <div className="flex-1 space-y-2 w-full">
               <Label className="text-[10px] font-bold uppercase text-slate-400 tracking-wider pl-1">Search Crew</Label>
-              <Input 
-                  placeholder="Search by Name or Rider ID..." 
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  className="input-premium h-11 px-4"
-              />
+              <div className="relative">
+                <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
+                <Input 
+                    placeholder="Search by Name or Rider ID..." 
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                    className="input-premium h-11 pl-11 pr-4"
+                />
+              </div>
           </div>
-          <div className="grid grid-cols-2 gap-4 w-full md:w-auto">
-            <div className="space-y-2">
-                <Label className="text-[10px] font-bold uppercase text-slate-400 tracking-wider pl-1">Vehicle</Label>
+          <div className="flex gap-4 w-full md:w-auto">
+            <div className="space-y-2 flex-1 md:w-40">
+                <Label className="text-[10px] font-bold uppercase text-slate-400 tracking-wider pl-1">Vehicle Class</Label>
                 <Select value={vehicleFilter} onValueChange={(v) => v && setVehicleFilter(v)}>
-                    <SelectTrigger className="bg-slate-50 border-slate-200 h-11 rounded-xl md:w-36">
+                    <SelectTrigger className="bg-slate-50 border-slate-200 h-11 rounded-xl w-full">
                         <SelectValue placeholder="All" />
                     </SelectTrigger>
                     <SelectContent className="rounded-xl border-slate-100 shadow-2xl">
                         <SelectItem value="ALL">All Vehicles</SelectItem>
                         <SelectItem value="BIKE">Bikes Only</SelectItem>
                         <SelectItem value="CAR">Cars Only</SelectItem>
-                    </SelectContent>
-                </Select>
-            </div>
-            <div className="space-y-2">
-                <Label className="text-[10px] font-bold uppercase text-slate-400 tracking-wider pl-1">Company</Label>
-                <Select value={companyFilter} onValueChange={(v) => v && setCompanyFilter(v)}>
-                    <SelectTrigger className="bg-slate-50 border-slate-200 h-11 rounded-xl md:w-36">
-                        <SelectValue placeholder="All" />
-                    </SelectTrigger>
-                    <SelectContent className="rounded-xl border-slate-100 shadow-2xl">
-                        <SelectItem value="ALL">All Companies</SelectItem>
-                        {availableCompanies.map(c => (
-                            <SelectItem key={c} value={c}>{c}</SelectItem>
-                        ))}
                     </SelectContent>
                 </Select>
             </div>
