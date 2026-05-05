@@ -117,11 +117,12 @@ export default function PayrollPage() {
   };
 
   const handleResetData = async () => {
-    if (!confirm('WARNING: This will permanently delete ALL payroll entries and slips for this tenant. Proceed?')) return;
+    const monthName = months.find(m => m.value === month)?.label;
+    if (!confirm(`WARNING: This will permanently delete payroll entries and slips for ${monthName} ${year}. Historical data will be preserved. Proceed?`)) return;
     
     try {
-      await api.post('/upload/reset');
-      toast.success('All payroll data has been reset.');
+      await api.post('/upload/reset', { month, year });
+      toast.success(`Payroll records for ${monthName} ${year} have been cleared.`);
       fetchDashboard();
     } catch (error) {
       toast.error('Failed to reset data');

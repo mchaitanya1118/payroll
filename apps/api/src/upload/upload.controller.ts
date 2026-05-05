@@ -98,8 +98,12 @@ export class UploadController {
 
   @Post("reset")
   @Roles(UserRole.ADMIN)
-  async resetData(@Request() req: any) {
+  async resetData(
+    @Request() req: any,
+    @Body("month") month?: number,
+    @Body("year") year?: number
+  ) {
     const tenantId = req.user.tenantId;
-    return this.uploadService.resetTenantData(tenantId);
+    return this.uploadService.resetTenantData(tenantId, month, year);
   }
 }

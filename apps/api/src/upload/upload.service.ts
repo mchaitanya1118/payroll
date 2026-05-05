@@ -551,18 +551,27 @@ export class UploadService {
     return score;
   }
 
-  async resetTenantData(tenantId: string) {
+  async resetTenantData(tenantId: string, month?: number, year?: number) {
     await this.ensureTenantExists(tenantId);
-    await this.prisma.dailyEntry.deleteMany({ where: { rider: { tenantId } } });
-    await this.prisma.payslip.deleteMany({ where: { tenantId } });
+    
+    const entryWhere: any = { rider: { tenantId } };
+    const slipWhere: any = { tenantId };
+    
+    if (month && year) {
+      entryWhere.payrollMonth = month;
+      entryWhere.payrollYear = year;
+      slipWhere.month = month;
+      slipWhere.year = year;
+    }
 
-    // We preserve Riders and Batches as per user request to keep the directory intact
-    // await this.prisma.rider.deleteMany({ where: { tenantId } });
-    // await this.prisma.batch.deleteMany({ where: { tenantId } });
+    await this.prisma.dailyEntry.deleteMany({ where: entryWhere });
+    await this.prisma.payslip.deleteMany({ where: slipWhere });
 
     return {
       success: true,
-      message: "Payroll data cleared. Riders and configurations preserved.",
+      message: month && year 
+        ? `Payroll data for ${month}/${year} cleared securely.`
+        : "All payroll data cleared. Riders and configurations preserved.",
     };
   }
 }

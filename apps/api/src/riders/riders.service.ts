@@ -97,11 +97,19 @@ export class RidersService {
   }
 
   async getCompanies(tenantId: string) {
-    const riders = await this.prisma.rider.findMany({
-      where: { tenantId, companyCode: { not: null } },
-      select: { companyCode: true },
-      distinct: ["companyCode"],
-    });
-    return riders.map((r) => r.companyCode).filter(Boolean);
+    try {
+      const riders = await this.prisma.rider.findMany({
+        where: { 
+          tenantId, 
+          companyCode: { not: null, not: '' } 
+        },
+        select: { companyCode: true },
+        distinct: ['companyCode'],
+      });
+      return riders.map((r) => r.companyCode).filter(Boolean);
+    } catch (error) {
+      console.error('[RidersService] getCompanies failure:', error);
+      return [];
+    }
   }
 }

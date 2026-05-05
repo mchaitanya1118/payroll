@@ -73,12 +73,22 @@ export default function DataEntryPage() {
 
   const fetchAdjustedSlips = useCallback(async () => {
     try {
-      const { data } = await api.get(`/payslips/adjustments/list?month=${month}&year=${year}&companyCode=${activeTab}`);
+      const { data } = await api.get(`/payslips?month=${month}&year=${year}&companyCode=${activeTab}`);
       setAdjustedSlips(data);
     } catch (error) {
-      console.error('Failed to fetch adjusted slips:', error);
+      console.error('Failed to fetch slips:', error);
     }
   }, [month, year, activeTab]);
+
+  const handleRowUpdate = async (slipId: string, updates: any) => {
+    try {
+      await api.patch(`/payslips/${slipId}`, updates);
+      toast.success('Record updated successfully');
+      fetchAdjustedSlips();
+    } catch (error) {
+      toast.error('Failed to update record');
+    }
+  };
 
   useEffect(() => {
     fetchCompanies();
@@ -469,14 +479,14 @@ export default function DataEntryPage() {
         </CardContent>
       </Card>
 
-      {/* History Table */}
+      {/* Batch Adjustment Hub */}
       <div className="space-y-6">
         <div className="flex flex-col md:flex-row justify-between items-end md:items-center gap-6 px-4">
            <div>
               <h3 className="text-2xl font-black text-slate-900 uppercase tracking-tighter italic flex items-center gap-2">
-                 <History className="text-emerald-500" size={24} /> Recent Adjustments
+                 <History className="text-emerald-500" size={24} /> Batch Adjustment Hub
               </h3>
-              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1">Audit log for the current filter</p>
+              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1">Direct inline editing for the entire fleet</p>
            </div>
            
            <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full md:w-auto">
@@ -492,65 +502,80 @@ export default function DataEntryPage() {
         </div>
 
         <Card className="border-none shadow-2xl rounded-[2.5rem] bg-white/80 backdrop-blur-xl overflow-hidden border border-white/60">
-           <CardContent className="p-0">
+           <CardContent className="p-0 overflow-x-auto">
               <Table>
                 <TableHeader>
-                  <TableRow className="bg-slate-50/50 border-slate-100 hover:bg-slate-50/50">
-                    <TableHead className="w-[100px] pl-8 text-[10px] font-black uppercase text-slate-400 tracking-widest">Pilot</TableHead>
-                    <TableHead className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Rider Name</TableHead>
-                    <TableHead className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Entity</TableHead>
-                    <TableHead className="text-right text-[10px] font-black uppercase text-slate-400 tracking-widest">Net Total</TableHead>
-                    <TableHead className="text-right text-[10px] font-black uppercase text-slate-400 tracking-widest pr-8">Actions</TableHead>
+                  <TableRow className="bg-slate-50/50 border-slate-100 hover:bg-slate-50/50 h-16">
+                    <TableHead className="w-[120px] pl-8 text-[9px] font-black uppercase text-slate-400 tracking-[0.2em]">Pilot ID</TableHead>
+                    <TableHead className="min-w-[150px] text-[9px] font-black uppercase text-slate-400 tracking-[0.2em]">Name</TableHead>
+                    <TableHead className="w-[100px] text-[9px] font-black uppercase text-slate-400 tracking-[0.2em] text-center">Sales Cash</TableHead>
+                    <TableHead className="w-[100px] text-[9px] font-black uppercase text-slate-400 tracking-[0.2em] text-center">Car Rent</TableHead>
+                    <TableHead className="w-[100px] text-[9px] font-black uppercase text-slate-400 tracking-[0.2em] text-center">Akama</TableHead>
+                    <TableHead className="w-[100px] text-[9px] font-black uppercase text-slate-400 tracking-[0.2em] text-center">Fine</TableHead>
+                    <TableHead className="w-[100px] text-[9px] font-black uppercase text-slate-400 tracking-[0.2em] text-center">Deduct</TableHead>
+                    <TableHead className="w-[100px] text-[9px] font-black uppercase text-slate-400 tracking-[0.2em] text-center text-emerald-600">Bonus</TableHead>
+                    <TableHead className="w-[100px] text-[9px] font-black uppercase text-slate-400 tracking-[0.2em] text-center">Bank</TableHead>
+                    <TableHead className="w-[100px] text-[9px] font-black uppercase text-slate-400 tracking-[0.2em] text-center text-amber-600">Advance</TableHead>
+                    <TableHead className="w-[120px] text-right text-[9px] font-black uppercase text-slate-400 tracking-[0.2em] pr-8">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {adjustedSlips.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={5} className="h-40 text-center text-slate-400 italic font-medium">
-                        No adjusted records found for this selection.
+                      <TableCell colSpan={11} className="h-40 text-center text-slate-400 italic font-medium">
+                        No records found for this selection.
                       </TableCell>
                     </TableRow>
                   ) : (
-                    adjustedSlips.map((slip, i) => (
-                      <motion.tr 
+                    adjustedSlips.map((slip) => (
+                      <TableRow 
                         key={slip.id}
-                        initial={{ opacity: 0, x: -10 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        transition={{ delay: i * 0.05 }}
-                        className="group hover:bg-slate-50/50 transition-all border-slate-50"
+                        className="group hover:bg-emerald-50/20 transition-all border-slate-50 h-20"
                       >
-                        <TableCell className="h-20 pl-8">
-                          <div className="bg-slate-100 px-3 py-1.5 rounded-xl inline-block font-black text-xs italic text-slate-600 shadow-inner">
-                            {slip.rider.riderId}
-                          </div>
+                        <TableCell className="pl-8">
+                           <div className="bg-slate-100 px-3 py-1.5 rounded-xl inline-block font-black text-[10px] italic text-slate-600 shadow-inner">
+                             {slip.rider.riderId}
+                           </div>
                         </TableCell>
                         <TableCell>
-                          <div className="flex items-center gap-3">
-                             <div className="h-9 w-9 rounded-xl bg-gradient-to-br from-slate-100 to-slate-200 flex items-center justify-center text-slate-600 font-black group-hover:from-emerald-500 group-hover:to-emerald-600 group-hover:text-white transition-all">
-                                {slip.rider.riderName.charAt(0)}
-                             </div>
-                             <span className="font-black text-slate-900 tracking-tight">{slip.rider.riderName}</span>
+                          <div className="flex flex-col">
+                             <span className="font-black text-slate-900 tracking-tight text-xs">{slip.rider.riderName}</span>
+                             <span className="text-[8px] font-bold text-slate-400 uppercase tracking-widest">{slip.rider.companyCode || 'IND'}</span>
                           </div>
                         </TableCell>
-                        <TableCell>
-                          <span className="text-[9px] px-2 py-1 bg-slate-100 text-slate-500 rounded-lg font-black uppercase tracking-widest border border-slate-200/50">
-                            {slip.rider.companyCode || 'IND'}
-                          </span>
-                        </TableCell>
-                        <TableCell className="text-right font-black tabular-nums text-slate-900">
-                          {format(slip.netTotal)}
-                        </TableCell>
+                        {[
+                          { key: 'salesCash', color: 'slate' },
+                          { key: 'carRent', color: 'slate' },
+                          { key: 'akama', color: 'slate' },
+                          { key: 'fine', color: 'slate' },
+                          { key: 'deductions', color: 'slate' },
+                          { key: 'bonus', color: 'emerald' },
+                          { key: 'bankDeduction', color: 'slate' },
+                          { key: 'advanceDeduction', color: 'amber' },
+                        ].map(field => (
+                          <TableCell key={field.key} className="p-1">
+                             <EditableInput 
+                                initialValue={slip[field.key] || 0}
+                                color={field.color}
+                                onSave={(val) => {
+                                  if (val !== slip[field.key]) {
+                                    handleRowUpdate(slip.id, { [field.key]: val });
+                                  }
+                                }}
+                             />
+                          </TableCell>
+                        ))}
                         <TableCell className="text-right pr-8">
                            <Button 
                               variant="ghost" 
                               size="sm" 
                               onClick={() => handleSearch(slip.rider.riderId)}
-                              className="rounded-xl font-black text-[9px] uppercase tracking-widest text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 group/edit"
+                              className="rounded-xl h-10 w-10 p-0 text-slate-400 hover:text-emerald-500 hover:bg-emerald-50 transition-all"
                            >
-                              Edit Data <ArrowRight className="ml-1 group-hover/edit:translate-x-1 transition-transform" size={14} />
+                              <ArrowRight size={18} />
                            </Button>
                         </TableCell>
-                      </motion.tr>
+                      </TableRow>
                     ))
                   )}
                 </TableBody>
@@ -559,5 +584,28 @@ export default function DataEntryPage() {
         </Card>
       </div>
     </div>
+  );
+}
+
+// Helper component for controlled batch entry to avoid Base UI warnings
+function EditableInput({ initialValue, onSave, color }: { initialValue: number, onSave: (val: number) => void, color?: string }) {
+  const [value, setValue] = useState<string | number>(initialValue || 0);
+
+  useEffect(() => {
+    setValue(initialValue || 0);
+  }, [initialValue]);
+
+  return (
+    <Input 
+      type="number"
+      value={value}
+      onChange={(e) => setValue(e.target.value)}
+      onBlur={() => onSave(parseFloat(value as string) || 0)}
+      className={cn(
+        "h-10 w-full bg-slate-50 border-none rounded-xl text-center font-black text-xs tabular-nums focus:ring-2 focus:ring-emerald-500/50 transition-all outline-none",
+        color === 'emerald' && "text-emerald-600 bg-emerald-50/50",
+        color === 'amber' && "text-amber-600 bg-amber-50/50"
+      )}
+    />
   );
 }

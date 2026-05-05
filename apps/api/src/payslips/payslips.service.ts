@@ -107,7 +107,7 @@ export class PayslipsService {
 
     const where: any = { tenantId, month, year };
 
-    if (companyCode) {
+    if (companyCode && companyCode !== 'ALL') {
       where.rider = { companyCode };
     }
 
@@ -218,7 +218,7 @@ export class PayslipsService {
   ) {
     const where: any = { tenantId, month, year };
 
-    if (companyCode) {
+    if (companyCode && companyCode !== 'ALL') {
       where.rider = { companyCode };
     }
 
@@ -707,7 +707,7 @@ export class PayslipsService {
         ]
       };
 
-      if (companyCode) {
+      if (companyCode && companyCode !== 'ALL') {
         where.rider = { companyCode };
       }
 
