@@ -101,7 +101,7 @@ export class RidersService {
       const riders = await this.prisma.rider.findMany({
         where: { 
           tenantId, 
-          companyCode: { not: null, not: '' } 
+          companyCode: { not: null } 
         },
         select: { companyCode: true },
         distinct: ['companyCode'],
