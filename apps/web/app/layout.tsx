@@ -16,7 +16,11 @@ export const metadata: Metadata = {
   title: "Neqtra Payroll | Advanced Salary Slip Generator",
   description: "Enterprise-grade payroll and salary slip generation for modern businesses.",
   icons: {
-    icon: "/favicon.ico",
+    icon: [
+      { url: "/favicon.ico", sizes: "32x32" },
+      { url: "/icon.png", sizes: "192x192" },
+    ],
+    apple: "/icon.png",
   },
 };
 
