@@ -159,22 +159,31 @@ export class RidersService {
   }
 
   async getActiveLocations(tenantId: string) {
-    return this.prisma.rider.findMany({
-      where: {
-        tenantId,
-        lastLat: { not: null },
-        lastLng: { not: null },
-      },
-      select: {
-        id: true,
-        riderId: true,
-        riderName: true,
-        lastLat: true,
-        lastLng: true,
-        lastLocationUpdate: true,
-        status: true,
-        vehicleType: true,
-      }
-    });
+    try {
+      console.log(`[RidersService] Fetching active locations for tenant: ${tenantId}`);
+      const riders = await this.prisma.rider.findMany({
+        where: {
+          tenantId,
+          lastLat: { not: null },
+          lastLng: { not: null },
+        },
+        select: {
+          id: true,
+          riderId: true,
+          riderName: true,
+          lastLat: true,
+          lastLng: true,
+          lastLocationUpdate: true,
+          status: true,
+          vehicleType: true,
+        },
+        orderBy: { lastLocationUpdate: 'desc' }
+      });
+      console.log(`[RidersService] Found ${riders.length} riders with locations`);
+      return riders;
+    } catch (error) {
+      console.error('[RidersService] getActiveLocations failure:', error);
+      throw error;
+    }
   }
 }
