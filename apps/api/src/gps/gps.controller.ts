@@ -18,4 +18,9 @@ export class GpsController {
   async getActive(@Request() req: any) {
     return this.gpsService.getActiveLocations(req.user.tenantId);
   }
+
+  @Get('ping')
+  async ping() {
+    return { status: 'gps-alive' };
+  }
 }
