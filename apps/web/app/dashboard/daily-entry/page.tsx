@@ -55,6 +55,7 @@ export default function DailyEntryGrid() {
       setEntryMap(data.entryMap);
       setPendingChanges({});
     } catch (error) {
+      console.error('[DailyEntryGrid] fetchGrid error:', error);
       toast.error('Failed to fetch daily entries');
     } finally {
       setLoading(false);

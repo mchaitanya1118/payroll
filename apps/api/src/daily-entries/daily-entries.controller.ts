@@ -16,8 +16,8 @@ export class DailyEntriesController {
   ) {
     return this.dailyEntriesService.getMonthlyGrid(
       req.user.tenantId,
-      parseInt(month),
-      parseInt(year),
+      Number(month),
+      Number(year),
       companyCode,
     );
   }

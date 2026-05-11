@@ -27,8 +27,10 @@ export class DailyEntriesService {
     });
 
     // 2. Fetch Daily Entries
-    const startDate = new Date(Date.UTC(year, month - 1, 1));
-    const endDate = new Date(Date.UTC(year, month, 0));
+    const m = Number(month);
+    const y = Number(year);
+    const startDate = new Date(Date.UTC(y, m - 1, 1));
+    const endDate = new Date(Date.UTC(y, m, 0, 23, 59, 59, 999));
 
     const entries = await this.prisma.dailyEntry.findMany({
       where: {
