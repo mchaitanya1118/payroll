@@ -73,6 +73,18 @@ export class RidersController {
 
   @Get("gps/active")
   async getActiveLocations(@Request() req: any) {
-    return this.ridersService.getActiveLocations(req.user.tenantId);
+    // TEMPORARY: Return static data WITHOUT guards to verify route reachability
+    return [
+      {
+        id: 'public-test',
+        riderId: 'PUB01',
+        riderName: 'PUBLIC TEST RIDER',
+        lastLat: 24.7136,
+        lastLng: 46.6753,
+        lastLocationUpdate: new Date(),
+        status: 'ACTIVE',
+        vehicleType: 'BIKE'
+      }
+    ];
   }
 }
