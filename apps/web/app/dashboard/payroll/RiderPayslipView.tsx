@@ -132,12 +132,13 @@ export default function RiderPayslipView({ riderId, month, year, onBack }: any) 
   if (data.entries && data.entries.length > 0) {
     data.entries.forEach((e: any) => {
       const weekKey = getWeekKey(e.date);
-      const batchKey = `${weekKey}-${e.batch.batchNumber}`;
+      const batchNum = e.batch?.batchNumber || 'GROUP';
+      const batchKey = `${weekKey}-${batchNum}`;
       
       if (!groupedMap.has(batchKey)) {
           groupedMap.set(batchKey, {
               date: weekKey,
-              batch: e.batch.batchNumber,
+              batch: batchNum,
               singleOrders: 0,
               doubleOrders: 0,
               rateSingle: e.autoRateSingle,
