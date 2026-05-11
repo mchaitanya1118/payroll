@@ -81,6 +81,15 @@ export default function RidersPage() {
     }
   };
 
+  const fetchCompanies = async () => {
+    try {
+      const res = await api.get('/riders/companies');
+      setAvailableCompanies(res.data);
+    } catch (error) {
+      console.error('Failed to load companies');
+    }
+  };
+
   const fetchGroups = async () => {
     try {
       const res = await api.get('/rider-groups');
