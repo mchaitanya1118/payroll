@@ -160,7 +160,23 @@ export class RidersService {
 
   async getActiveLocations(tenantId: string) {
     try {
-      console.log(`[RidersService] Fetching active locations for tenant: ${tenantId}`);
+      console.log(`[RidersService] GPS DEBUG: tenantId=${tenantId}`);
+      
+      // Temporary Static Return to diagnose 500/404 issues
+      return [
+        {
+          id: 'test-1',
+          riderId: 'TEST01',
+          riderName: 'SYSTEM TEST RIDER',
+          lastLat: 24.7136,
+          lastLng: 46.6753,
+          lastLocationUpdate: new Date(),
+          status: 'ACTIVE',
+          vehicleType: 'BIKE'
+        }
+      ];
+
+      /*
       const riders = await this.prisma.rider.findMany({
         where: {
           tenantId,
@@ -179,8 +195,8 @@ export class RidersService {
         },
         orderBy: { lastLocationUpdate: 'desc' }
       });
-      console.log(`[RidersService] Found ${riders.length} riders with locations`);
       return riders;
+      */
     } catch (error) {
       console.error('[RidersService] getActiveLocations failure:', error);
       throw error;
