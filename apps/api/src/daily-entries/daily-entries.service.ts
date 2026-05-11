@@ -103,7 +103,7 @@ export class DailyEntriesService {
              batchId = newBatch.id;
              batchNumber = 1;
           }
-        } else {
+        } else if (batchId) {
           const batch = await this.prisma.batch.findUnique({ where: { id: batchId } });
           batchNumber = batch?.batchNumber || 0;
         }
