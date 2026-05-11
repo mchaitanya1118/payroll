@@ -18,6 +18,7 @@ import { WhatsappModule } from "./whatsapp/whatsapp.module";
 import { AdvancesModule } from "./advances/advances.module";
 import { DailyEntriesModule } from "./daily-entries/daily-entries.module";
 import { RiderGroupsModule } from "./rider-groups/rider-groups.module";
+// Triggering server reload after schema update - GPS Final Kick
 import { GpsModule } from "./gps/gps.module";
 
 @Module({
