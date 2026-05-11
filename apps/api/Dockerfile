@@ -93,10 +93,10 @@ COPY --from=builder /app/apps/api/prisma ./prisma
 EXPOSE 4000
 
 # Healthcheck for Coolify
-HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 \
+HEALTHCHECK --interval=30s --timeout=30s --start-period=60s --retries=5 \
   CMD node -e "require('http').get('http://localhost:4000/health', (res) => { if (res.statusCode === 200) process.exit(0); else process.exit(1); })" || exit 1
 
-CMD ["sh", "-c", "npx prisma migrate deploy && npx prisma db seed || true && npm run start:prod"]
+CMD ["sh", "-c", "echo '🚀 Starting API...' && npx prisma migrate deploy && echo '✅ Migrations complete' && npx prisma db seed || echo 'ℹ️ Seed skipped' && npm run start:prod"]
 
 
 
