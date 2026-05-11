@@ -58,130 +58,132 @@ export class DailyEntriesService {
   }
 
   async bulkUpdate(tenantId: string, updates: any[]) {
+    if (!updates || updates.length === 0) return { success: true };
+    
+    // 1. Pre-fetch all involved riders to verify ownership and get types
+    const riderIds = [...new Set(updates.map(u => u.riderId))];
+    const riders = await this.prisma.rider.findMany({
+      where: { 
+        id: { in: riderIds },
+        tenantId 
+      }
+    });
+    const riderMap = new Map(riders.map(r => [r.id, r]));
+
+    // 2. Pre-fetch group rates for involved groups
+    const groupIds = [...new Set(riders.map(r => r.groupId).filter(Boolean))] as string[];
+    const groupRates = groupIds.length > 0 ? await this.prisma.groupRate.findMany({
+      where: { groupId: { in: groupIds } }
+    }) : [];
+
+    // 3. Pre-fetch all rate configs for the tenant
+    const rateConfigs = await this.prisma.rateConfig.findMany({
+      where: { tenantId }
+    });
+
+    // 4. Pre-fetch batches for the tenant
+    const batches = await this.prisma.batch.findMany({
+      where: { tenantId }
+    });
+    const latestBatch = batches.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())[0];
+
     const payslipsToSync = new Set<string>();
 
-    for (const update of updates) {
-      const { riderId, date, status, orders, cashCollected } = update;
-      const entryDate = new Date(date);
-      
-      // Fetch rider to get vehicleType and rateType for pricing
-      const rider = await this.prisma.rider.findUnique({
-        where: { id: riderId }
-      });
+    // Use a transaction for better integrity
+    await this.prisma.$transaction(async (tx) => {
+      for (const update of updates) {
+        const { riderId, date, status, orders, cashCollected } = update;
+        const entryDate = new Date(date);
+        const rider = riderMap.get(riderId);
 
-      if (!rider) continue;
+        // Security check: skip if rider doesn't belong to this tenant
+        if (!rider) continue;
 
-      // Find or create a default batch for the tenant if not provided
-      // In this manual mode, we might just use a default batch or look up the latest one
-      // For now, let's try to find if an entry already exists to get its batchId
-      const existingEntry = await this.prisma.dailyEntry.findUnique({
-        where: { riderId_date: { riderId, date: entryDate } }
-      });
+        // Determine Batch
+        let batchId: string | null = null;
+        let batchNumber = 0;
 
-      let batchId = existingEntry?.batchId;
-      let batchNumber = 0;
-
-      // If rider is NOT in a group, we MUST have a batch
-      if (!rider.groupId) {
-        if (!batchId) {
-          // Find the most recent batch for this tenant
-          const latestBatch = await this.prisma.batch.findFirst({
-            where: { tenantId },
-            orderBy: { createdAt: 'desc' }
-          });
-          if (latestBatch) {
-            batchId = latestBatch.id;
-            batchNumber = latestBatch.batchNumber;
-          } else {
-             // Create a default batch if none exists
-             const newBatch = await this.prisma.batch.create({
-               data: {
-                 tenantId,
-                 batchNumber: 1,
-                 rateSingleOrder: 0,
-                 rateDoubleOrder: 0
-               }
-             });
-             batchId = newBatch.id;
-             batchNumber = 1;
-          }
-        } else if (batchId) {
-          const batch = await this.prisma.batch.findUnique({ where: { id: batchId } });
-          batchNumber = batch?.batchNumber || 0;
+        if (!rider.groupId) {
+           // For non-group riders, we need a batch. 
+           // In manual grid mode, we'll try to find if an entry already exists or use the latest batch
+           const existing = await tx.dailyEntry.findUnique({
+             where: { riderId_date: { riderId, date: entryDate } }
+           });
+           
+           if (existing?.batchId) {
+             batchId = existing.batchId;
+             const b = batches.find(bx => bx.id === batchId);
+             batchNumber = b?.batchNumber || 0;
+           } else if (latestBatch) {
+             batchId = latestBatch.id;
+             batchNumber = latestBatch.batchNumber;
+           }
         }
-      }
 
-      // Calculate Amount based on rates
-      let riderRateSingle = 0;
-      let companyRateSingle = 0;
+        // Calculate Rates
+        let riderRateSingle = 0;
+        let companyRateSingle = 0;
 
-      if (rider.groupId) {
-        const groupRate = await this.prisma.groupRate.findUnique({
-          where: {
-            groupId_vehicleType_rateType: {
-              groupId: rider.groupId,
-              vehicleType: rider.vehicleType,
-              rateType: rider.rateType
-            }
+        if (rider.groupId) {
+          const gr = groupRates.find(r => 
+            r.groupId === rider.groupId && 
+            r.vehicleType === rider.vehicleType && 
+            r.rateType === rider.rateType
+          );
+          if (gr) {
+            riderRateSingle = gr.riderRateSingle;
+            companyRateSingle = gr.companyRateSingle;
+          }
+        }
+
+        if (riderRateSingle === 0) {
+          const rc = rateConfigs.find(r => 
+            r.batchNumber === batchNumber && 
+            r.vehicleType === rider.vehicleType && 
+            r.rateType === rider.rateType
+          );
+          riderRateSingle = rc?.riderRateSingle || 0;
+          companyRateSingle = rc?.companyRateSingle || 0;
+        }
+
+        const dailyAmount = orders * riderRateSingle;
+        const companyAmount = orders * companyRateSingle;
+
+        await tx.dailyEntry.upsert({
+          where: { riderId_date: { riderId, date: entryDate } },
+          update: {
+            status,
+            orders,
+            cashCollected,
+            singleOrders: orders,
+            dailyAmount,
+            companyAmount,
+            riderRateSingle,
+            companyRateSingle,
+            payrollMonth: entryDate.getUTCMonth() + 1,
+            payrollYear: entryDate.getUTCFullYear(),
+          },
+          create: {
+            riderId,
+            date: entryDate,
+            batchId,
+            status,
+            orders,
+            cashCollected,
+            singleOrders: orders,
+            autoRateSingle: riderRateSingle,
+            dailyAmount,
+            companyAmount,
+            riderRateSingle,
+            companyRateSingle,
+            payrollMonth: entryDate.getUTCMonth() + 1,
+            payrollYear: entryDate.getUTCFullYear(),
           }
         });
-        if (groupRate) {
-          riderRateSingle = groupRate.riderRateSingle;
-          companyRateSingle = groupRate.companyRateSingle;
-        }
+
+        payslipsToSync.add(`${riderId}|${entryDate.getUTCMonth() + 1}|${entryDate.getUTCFullYear()}`);
       }
-
-      if (riderRateSingle === 0) {
-        const rateConfig = await this.ratesService.findOne(
-          tenantId,
-          batchNumber,
-          rider.vehicleType,
-          rider.rateType
-        );
-
-        riderRateSingle = rateConfig?.riderRateSingle || 0;
-        companyRateSingle = rateConfig?.companyRateSingle || 0;
-      }
-
-      // In the manual grid, "orders" is treated as single orders for now
-      const dailyAmount = orders * riderRateSingle;
-      const companyAmount = orders * companyRateSingle;
-
-      await this.prisma.dailyEntry.upsert({
-        where: { riderId_date: { riderId, date: entryDate } },
-        update: {
-          status,
-          orders,
-          cashCollected,
-          singleOrders: orders, // Sync with singleOrders
-          dailyAmount,
-          companyAmount,
-          riderRateSingle: riderRateSingle,
-          companyRateSingle: companyRateSingle,
-          payrollMonth: entryDate.getUTCMonth() + 1,
-          payrollYear: entryDate.getUTCFullYear(),
-        },
-        create: {
-          riderId,
-          date: entryDate,
-          batchId,
-          status,
-          orders,
-          cashCollected,
-          singleOrders: orders,
-          autoRateSingle: riderRateSingle,
-          autoRateDouble: 0,
-          dailyAmount,
-          companyAmount,
-          riderRateSingle: riderRateSingle,
-          companyRateSingle: companyRateSingle,
-          payrollMonth: entryDate.getUTCMonth() + 1,
-          payrollYear: entryDate.getUTCFullYear(),
-        }
-      });
-
-      payslipsToSync.add(`${riderId}|${entryDate.getUTCMonth() + 1}|${entryDate.getUTCFullYear()}`);
-    }
+    });
 
     // Sync payslips
     for (const key of payslipsToSync) {

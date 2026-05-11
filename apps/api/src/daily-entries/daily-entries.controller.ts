@@ -27,6 +27,12 @@ export class DailyEntriesController {
     @Body('updates') updates: any[],
     @Request() req: any,
   ) {
+    if (!Array.isArray(updates)) {
+      throw new Error('Updates must be an array');
+    }
+    if (updates.length > 1000) {
+      throw new Error('Bulk update limit exceeded (max 1000)');
+    }
     return this.dailyEntriesService.bulkUpdate(req.user.tenantId, updates);
   }
 }
