@@ -17,7 +17,8 @@ import {
   Database,
   PieChart,
   Edit3,
-  Calendar
+  Calendar,
+  Navigation
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Toaster } from "@/components/ui/sonner";
