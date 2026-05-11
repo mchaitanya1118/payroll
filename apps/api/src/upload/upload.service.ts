@@ -128,6 +128,36 @@ export class UploadService {
           ["phone", "whats app", "whatsapp", "mobile", "cell", "phone number"],
           mapping?.phoneNumber,
         );
+        const statusRaw = this.getCol(
+          row,
+          ["status", "active", "state"],
+          mapping?.status,
+        );
+        const zoneRaw = this.getCol(
+          row,
+          ["zone", "region", "area"],
+          mapping?.zone,
+        );
+        const nationalityRaw = this.getCol(
+          row,
+          ["nationality", "country", "nation"],
+          mapping?.nationality,
+        );
+        const vehicleOwnershipRaw = this.getCol(
+          row,
+          ["vehicle ownership", "ownership", "owner"],
+          mapping?.vehicleOwnership,
+        );
+        const vehicleNumberRaw = this.getCol(
+          row,
+          ["vehicle number", "plate number", "plate", "vehicle no"],
+          mapping?.vehicleNumber,
+        );
+        const vehicleModelRaw = this.getCol(
+          row,
+          ["vehicle model", "model", "car model", "bike model"],
+          mapping?.vehicleModel,
+        );
 
         if (!riderIdRaw && !nameRaw) continue;
 
@@ -163,6 +193,12 @@ export class UploadService {
               phoneNumber: phoneRaw
                 ? String(phoneRaw).trim().replace(/\s+/g, "")
                 : null,
+              status: statusRaw ? String(statusRaw).trim().toUpperCase() : "ACTIVE",
+              zone: zoneRaw ? String(zoneRaw).trim() : null,
+              nationality: nationalityRaw ? String(nationalityRaw).trim() : null,
+              vehicleOwnership: vehicleOwnershipRaw ? String(vehicleOwnershipRaw).trim() : null,
+              vehicleNumber: vehicleNumberRaw ? String(vehicleNumberRaw).trim() : null,
+              vehicleModel: vehicleModelRaw ? String(vehicleModelRaw).trim() : null,
             },
           });
         } else if (rider) {
@@ -178,6 +214,30 @@ export class UploadService {
 
           if (companyRaw && String(companyRaw).trim() !== rider.companyCode) {
             updateData.companyCode = String(companyRaw).trim();
+          }
+
+          if (statusRaw && String(statusRaw).trim().toUpperCase() !== rider.status) {
+            updateData.status = String(statusRaw).trim().toUpperCase();
+          }
+
+          if (zoneRaw && String(zoneRaw).trim() !== rider.zone) {
+            updateData.zone = String(zoneRaw).trim();
+          }
+
+          if (nationalityRaw && String(nationalityRaw).trim() !== rider.nationality) {
+            updateData.nationality = String(nationalityRaw).trim();
+          }
+
+          if (vehicleOwnershipRaw && String(vehicleOwnershipRaw).trim() !== rider.vehicleOwnership) {
+            updateData.vehicleOwnership = String(vehicleOwnershipRaw).trim();
+          }
+
+          if (vehicleNumberRaw && String(vehicleNumberRaw).trim() !== rider.vehicleNumber) {
+            updateData.vehicleNumber = String(vehicleNumberRaw).trim();
+          }
+
+          if (vehicleModelRaw && String(vehicleModelRaw).trim() !== rider.vehicleModel) {
+            updateData.vehicleModel = String(vehicleModelRaw).trim();
           }
 
           if (Object.keys(updateData).length > 0) {
@@ -312,12 +372,23 @@ export class UploadService {
             rider.rateType,
           );
 
-          let finalRiderRateSingle = autoRateSingle;
-          let finalRiderRateDouble = autoRateDouble;
-          let finalCompanyRateSingle = 0;
-          let finalCompanyRateDouble = 0;
+          // Group Rates Override
+          const groupRate = rider.groupId ? await this.prisma.groupRate.findUnique({
+            where: {
+              groupId_vehicleType_rateType: {
+                groupId: rider.groupId,
+                vehicleType: rider.vehicleType,
+                rateType: rider.rateType
+              }
+            }
+          }) : null;
 
-          if (rateConfig) {
+          let finalRiderRateSingle = groupRate?.riderRateSingle ?? autoRateSingle;
+          let finalRiderRateDouble = groupRate?.riderRateDouble ?? autoRateDouble;
+          let finalCompanyRateSingle = groupRate?.companyRateSingle ?? 0;
+          let finalCompanyRateDouble = groupRate?.companyRateDouble ?? 0;
+
+          if (!groupRate && rateConfig) {
             finalRiderRateSingle = rateConfig.riderRateSingle;
             finalRiderRateDouble = rateConfig.riderRateDouble;
             finalCompanyRateSingle = rateConfig.companyRateSingle;
@@ -330,6 +401,9 @@ export class UploadService {
           const companyAmount =
             singleOrders * finalCompanyRateSingle +
             doubleOrders * finalCompanyRateDouble;
+
+          const m = payrollMonth || (entryDate.getUTCMonth() + 1);
+          const y = payrollYear || entryDate.getUTCFullYear();
 
           await this.prisma.dailyEntry.upsert({
             where: { riderId_date: { riderId: rider.id, date: entryDate } },
@@ -346,8 +420,8 @@ export class UploadService {
               companyRateSingle: finalCompanyRateSingle,
               companyRateDouble: finalCompanyRateDouble,
               companyAmount: companyAmount,
-              payrollMonth,
-              payrollYear,
+              payrollMonth: m,
+              payrollYear: y,
             },
             create: {
               date: entryDate,
@@ -364,18 +438,12 @@ export class UploadService {
               companyRateSingle: finalCompanyRateSingle,
               companyRateDouble: finalCompanyRateDouble,
               companyAmount: companyAmount,
-              payrollMonth,
-              payrollYear,
+              payrollMonth: m,
+              payrollYear: y,
             },
           });
 
-          if (payrollMonth && payrollYear) {
-            payslipsToUpdate.add(`${rider.id}|${payrollMonth}|${payrollYear}`);
-          } else {
-            payslipsToUpdate.add(
-              `${rider.id}|${entryDate.getUTCMonth() + 1}|${entryDate.getUTCFullYear()}`,
-            );
-          }
+          payslipsToUpdate.add(`${rider.id}|${m}|${y}`);
           processedEntries.push(rider.id);
         } catch (e) {
           errors.push(`Row ${i + 2}: ${e.message}`);

@@ -27,8 +27,8 @@ export default function Home() {
 
   return (
     <div className="flex items-center justify-center min-h-screen bg-slate-900">
-      <div className="animate-pulse text-2xl font-black text-emerald-500 italic uppercase">
-        Neqtra Payroll
+      <div className="flex flex-col items-center gap-8">
+        <img src="/GD_logo.png" alt="GD Logo" className="h-48 w-48 object-contain animate-bounce-slow" />
       </div>
     </div>
   );

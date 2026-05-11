@@ -254,20 +254,33 @@ export class PayslipsService {
     const startTime = Date.now();
 
     // 1. Pre-fetch ALL necessary data in parallel
-    const [riders, rateConfigs, entries, existingSlips, batches] = await Promise.all([
+    const startDate = new Date(Date.UTC(year, month - 1, 1));
+    const endDate = new Date(Date.UTC(year, month, 0, 23, 59, 59, 999));
+
+    const [riders, rateConfigs, entries, existingSlips, batches, groupRates] = await Promise.all([
       this.prisma.rider.findMany({ where: { tenantId } }),
       this.prisma.rateConfig.findMany({ where: { tenantId } }),
       this.prisma.dailyEntry.findMany({
         where: {
           rider: { tenantId },
-          payrollMonth: month,
-          payrollYear: year,
+          OR: [
+            { payrollMonth: month, payrollYear: year },
+            {
+              date: {
+                gte: startDate,
+                lte: endDate,
+              }
+            }
+          ]
         },
       }),
       this.prisma.payslip.findMany({
         where: { tenantId, month, year },
       }),
       this.prisma.batch.findMany({ where: { tenantId } }),
+      this.prisma.groupRate.findMany({
+        where: { group: { tenantId } }
+      }),
     ]);
 
     // 2. Map data for quick lookup
@@ -304,10 +317,16 @@ export class PayslipsService {
           rc.rateType === rider.rateType
         );
 
-        const rRateS = e.riderRateSingle ?? rate?.riderRateSingle ?? 0;
-        const rRateD = e.riderRateDouble ?? rate?.riderRateDouble ?? 0;
-        const cRateS = e.companyRateSingle ?? rate?.companyRateSingle ?? 0;
-        const cRateD = e.companyRateDouble ?? rate?.companyRateDouble ?? 0;
+        const groupRate = rider.groupId ? groupRates.find(gr => 
+          gr.groupId === rider.groupId && 
+          gr.vehicleType === rider.vehicleType && 
+          gr.rateType === rider.rateType
+        ) : null;
+
+        const rRateS = e.riderRateSingle ?? groupRate?.riderRateSingle ?? rate?.riderRateSingle ?? 0;
+        const rRateD = e.riderRateDouble ?? groupRate?.riderRateDouble ?? rate?.riderRateDouble ?? 0;
+        const cRateS = e.companyRateSingle ?? groupRate?.companyRateSingle ?? rate?.companyRateSingle ?? 0;
+        const cRateD = e.companyRateDouble ?? groupRate?.companyRateDouble ?? rate?.companyRateDouble ?? 0;
 
         grossTotal += (e.singleOrders * rRateS) + (e.doubleOrders * rRateD);
         grossRevenue += (e.singleOrders * cRateS) + (e.doubleOrders * cRateD);
@@ -459,11 +478,21 @@ export class PayslipsService {
     }
 
     // 3. Fetch all daily entries for that month/year (Rule B)
+    const startDate = new Date(Date.UTC(year, month - 1, 1));
+    const endDate = new Date(Date.UTC(year, month, 0, 23, 59, 59, 999));
+
     const entries = await this.prisma.dailyEntry.findMany({
       where: {
         riderId,
-        payrollMonth: month,
-        payrollYear: year,
+        OR: [
+          { payrollMonth: month, payrollYear: year },
+          {
+            date: {
+              gte: startDate,
+              lte: endDate,
+            }
+          }
+        ]
       },
       orderBy: { date: "asc" },
       include: {
@@ -597,19 +626,55 @@ export class PayslipsService {
 
       // Recalculate using latest rates
       const batch = batches.find(b => b.id === e.batchId);
-      const rate = rateConfigs.find(rc => 
+      let rate: any = rateConfigs.find(rc => 
         rc.batchNumber === batch?.batchNumber && 
         rc.vehicleType === rider.vehicleType && 
         rc.rateType === rider.rateType
       );
 
-      const rRateS = e.riderRateSingle ?? rate?.riderRateSingle ?? 0;
-      const rRateD = e.riderRateDouble ?? rate?.riderRateDouble ?? 0;
-      const cRateS = e.companyRateSingle ?? rate?.companyRateSingle ?? 0;
-      const cRateD = e.companyRateDouble ?? rate?.companyRateDouble ?? 0;
+      // Priority: 
+      // 1. Specialized rates on entry
+      // 2. Group rates if rider belongs to a group
+      // 3. Batch rates (RateConfig)
+      
+      let rRateS = e.riderRateSingle;
+      let rRateD = e.riderRateDouble;
+      let cRateS = e.companyRateSingle;
+      let cRateD = e.companyRateDouble;
 
-      grossTotal += (e.singleOrders * rRateS) + (e.doubleOrders * rRateD);
-      grossRevenue += (e.singleOrders * cRateS) + (e.doubleOrders * cRateD);
+      if (rRateS === null && rider.groupId) {
+        const groupRate = await this.prisma.groupRate.findUnique({
+          where: {
+            groupId_vehicleType_rateType: {
+              groupId: rider.groupId,
+              vehicleType: rider.vehicleType,
+              rateType: rider.rateType
+            }
+          }
+        });
+        if (groupRate) {
+          rRateS = groupRate.riderRateSingle;
+          rRateD = groupRate.riderRateDouble;
+          cRateS = groupRate.companyRateSingle;
+          cRateD = groupRate.companyRateDouble;
+        }
+      }
+
+      // Fallback to batch rate if still null
+      if (rRateS === null || rRateS === undefined) {
+        rRateS = rate?.riderRateSingle ?? 0;
+        rRateD = rate?.riderRateDouble ?? 0;
+        cRateS = rate?.companyRateSingle ?? 0;
+        cRateD = rate?.companyRateDouble ?? 0;
+      }
+
+      const finalRiderRateS = rRateS ?? 0;
+      const finalRiderRateD = rRateD ?? 0;
+      const finalCompanyRateS = cRateS ?? 0;
+      const finalCompanyRateD = cRateD ?? 0;
+
+      grossTotal += (e.singleOrders * finalRiderRateS) + (e.doubleOrders * finalRiderRateD);
+      grossRevenue += (e.singleOrders * finalCompanyRateS) + (e.doubleOrders * finalCompanyRateD);
     }
 
     const payslip = await this.prisma.payslip.findUnique({

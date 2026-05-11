@@ -32,6 +32,8 @@ api.interceptors.response.use(
       useAuthStore.getState().logout();
       if (typeof window !== 'undefined' && !window.location.pathname.includes('/login')) {
         window.location.href = '/login';
+        // Return a pending promise to stop the error from bubbling up while redirecting
+        return new Promise(() => {}); 
       }
     }
     return Promise.reject(error);

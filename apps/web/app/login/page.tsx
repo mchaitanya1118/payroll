@@ -38,7 +38,6 @@ export default function LoginPage() {
       toast.success('Welcome back!');
       router.replace('/dashboard');
     } catch (error: any) {
-      console.error('Login error:', error);
       const message = error.response?.data?.message || error.message || 'Login failed';
       toast.error(message);
     } finally {
@@ -62,12 +61,12 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 p-4">
       <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-10 pointer-events-none"></div>
-      
+
       <Card className="w-full max-w-md border-slate-800 bg-slate-900/80 backdrop-blur-xl shadow-2xl">
-        <CardHeader className="space-y-1 text-center">
-          <CardTitle className="text-3xl font-black text-white tracking-tighter uppercase italic">
-            Neqtra <span className="text-emerald-500">Payroll</span>
-          </CardTitle>
+        <CardHeader className="space-y-2 text-center pb-2">
+          <div className="flex flex-col items-center">
+            <img src="/GD_logo.png" alt="GD Logo" className="h-40 w-40 object-contain" />
+          </div>
           <CardDescription className="text-slate-400">
             Enter your credentials to access your dashboard
           </CardDescription>
@@ -106,7 +105,7 @@ export default function LoginPage() {
             </Button>
           </form>
           <div className="mt-6 text-center text-sm">
-            <button 
+            <button
               onClick={() => router.push('/register')}
               className="text-emerald-500 hover:text-emerald-400 font-medium transition-colors"
             >

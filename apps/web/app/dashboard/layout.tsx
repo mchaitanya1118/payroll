@@ -3,26 +3,28 @@
 import { useEffect, useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { useAuthStore } from '@/store/useAuthStore';
-import { 
-  BarChart, 
-  Users, 
-  FileText, 
-  LogOut, 
-  Menu, 
-  X, 
+import {
+  BarChart,
+  Users,
+  FileText,
+  LogOut,
+  Menu,
+  X,
   ChevronRight,
   Settings,
   LayoutDashboard,
   TrendingUp,
   Database,
   PieChart,
-  Edit3
+  Edit3,
+  Calendar
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Toaster } from "@/components/ui/sonner";
 
 const navItems = [
   { title: 'Overview', href: '/dashboard', icon: LayoutDashboard },
+  { title: 'Daily Entry', href: '/dashboard/daily-entry', icon: Calendar },
   { title: 'Data Entry', href: '/dashboard/entry', icon: Edit3 },
   { title: 'Upload Excel', href: '/dashboard/upload', icon: FileText },
   { title: 'Riders', href: '/dashboard/riders', icon: Users },
@@ -32,27 +34,41 @@ const navItems = [
   { title: 'Settings', href: '/dashboard/settings', icon: Settings },
 ];
 
-const SidebarContent = ({ 
-  isMobile = false, 
-  sidebarOpen, 
-  setSidebarOpen, 
-  mobileMenuOpen, 
-  setMobileMenuOpen, 
-  pathname, 
-  router, 
-  logout, 
+const SidebarContent = ({
+  isMobile = false,
+  sidebarOpen,
+  setSidebarOpen,
+  mobileMenuOpen,
+  setMobileMenuOpen,
+  pathname,
+  router,
+  logout,
   user
 }: any) => (
   <>
     <div className={cn(
-      "p-6 flex items-center justify-between border-b border-slate-800",
-      !sidebarOpen && !isMobile && "justify-center"
+      "border-b border-slate-800 transition-all duration-300",
+      (sidebarOpen || isMobile)
+        ? "p-4 flex items-center justify-between flex-row"
+        : "p-2 flex flex-col items-center justify-center gap-2"
     )}>
       <div className={cn(
-        "text-xl font-black tracking-tighter uppercase italic text-white transition-all duration-300 overflow-hidden whitespace-nowrap",
-        (sidebarOpen || isMobile) ? "opacity-100 w-auto" : "opacity-0 w-0"
+        "flex items-center justify-center transition-all duration-300",
+        (sidebarOpen || isMobile) ? "flex-row gap-1" : "flex-col"
       )}>
-        Neqtra <span className="text-emerald-500">P.</span>
+        <img
+          src="/GD_logo.png"
+          alt="GD Logo"
+          className={cn(
+            "object-contain transition-all duration-300",
+            (sidebarOpen || isMobile) ? "h-16 w-16" : "h-16 w-16"
+          )}
+        />
+        {(sidebarOpen || isMobile) && (
+          <span className="text-2xl font-black text-white uppercase italic tracking-tighter">
+            Groups
+          </span>
+        )}
       </div>
       {!isMobile && (
         <button onClick={() => setSidebarOpen(!sidebarOpen)} className="p-1 hover:bg-slate-800 rounded transition-colors text-slate-400">
@@ -66,7 +82,10 @@ const SidebarContent = ({
       )}
     </div>
 
-    <nav className="flex-1 py-6 px-3 space-y-2 overflow-y-auto">
+    <nav className={cn(
+      "flex-1 py-6 px-3 space-y-2",
+      sidebarOpen ? "overflow-y-auto" : "overflow-visible"
+    )}>
       {navItems
         .filter((item: any) => {
           if ((item.href === '/dashboard/settings' || item.href === '/dashboard/reports') && user?.role !== 'ADMIN') return false;
@@ -96,7 +115,8 @@ const SidebarContent = ({
                 </div>
               )}
               {!sidebarOpen && !isMobile && (
-                <div className="absolute left-16 bg-slate-900 text-white px-2 py-1 rounded text-xs opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-50 pointer-events-none border border-slate-700">
+                <div className="absolute left-16 bg-slate-900/90 backdrop-blur-md text-white px-3 py-1.5 rounded-lg text-xs opacity-0 group-hover:opacity-100 group-hover:left-[70px] transition-all duration-300 whitespace-nowrap z-[100] pointer-events-none border border-emerald-500/30 shadow-[0_0_15px_-5px_rgba(16,185,129,0.3)]">
+                  <div className="absolute left-0 top-1/2 -translate-x-1/2 -translate-y-1/2 w-2 h-2 bg-slate-900 border-l border-b border-emerald-500/30 rotate-45" />
                   {item.title}
                 </div>
               )}
@@ -106,26 +126,31 @@ const SidebarContent = ({
     </nav>
 
     <div className="p-4 border-t border-slate-800">
-      <button
-        onClick={logout}
-        className={cn(
-          "w-full flex items-center p-3 rounded-lg hover:bg-red-500/10 text-red-500 transition-all",
-          !sidebarOpen && !isMobile && "justify-center"
-        )}
-      >
-        <LogOut size={22} />
-        {(sidebarOpen || isMobile) && <span className="ml-3 text-sm font-bold">Logout</span>}
-      </button>
-      {(sidebarOpen || isMobile) && (
-        <div className="mt-4 p-3 bg-white/5 border border-white/5 rounded-xl flex items-center group cursor-pointer hover:bg-white/10 transition-all">
-          <div className="h-9 w-9 bg-gradient-to-br from-emerald-400 to-emerald-600 rounded-full flex items-center justify-center text-slate-900 font-black text-sm uppercase shadow-lg shadow-emerald-500/20 group-hover:scale-105 transition-transform flex-shrink-0">
+      {(sidebarOpen || isMobile) ? (
+        <div className="p-3 bg-white/5 border border-white/5 rounded-2xl flex items-center group hover:bg-white/10 transition-all">
+          <div className="h-10 w-10 bg-gradient-to-br from-emerald-400 to-emerald-600 rounded-xl flex items-center justify-center text-slate-900 font-black text-sm uppercase shadow-lg shadow-emerald-500/20 flex-shrink-0">
             {user?.name?.charAt(0) || 'U'}
           </div>
-          <div className="ml-3 overflow-hidden">
+          <div className="ml-3 flex-1 min-w-0">
             <p className="text-xs font-bold truncate text-white">{user?.name || 'User'}</p>
             <p className="text-[10px] text-slate-500 uppercase font-black tracking-widest">{user?.role || 'Guest'}</p>
           </div>
+          <button
+            onClick={logout}
+            className="ml-2 p-2 rounded-lg hover:bg-red-500/10 text-red-500 transition-colors group/logout"
+            title="Logout"
+          >
+            <LogOut size={18} className="group-hover/logout:scale-110 transition-transform" />
+          </button>
         </div>
+      ) : (
+        <button
+          onClick={logout}
+          className="w-full flex items-center justify-center p-3 rounded-xl hover:bg-red-500/10 text-red-500 transition-all"
+          title="Logout"
+        >
+          <LogOut size={22} />
+        </button>
       )}
     </div>
   </>
@@ -135,7 +160,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const { user, logout, isHydrated } = useAuthStore();
   const router = useRouter();
   const pathname = usePathname();
-  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
 
@@ -169,12 +194,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   return (
     <div className="flex h-screen bg-slate-50 overflow-hidden font-outfit">
       <Toaster position="top-right" />
-      
+
       <aside className={cn(
         "glass-sidebar hidden lg:flex flex-col text-white transition-all duration-300 ease-in-out shadow-2xl z-40 shrink-0",
         sidebarOpen ? "w-72" : "w-20"
       )}>
-        <SidebarContent 
+        <SidebarContent
           sidebarOpen={sidebarOpen}
           setSidebarOpen={setSidebarOpen}
           mobileMenuOpen={mobileMenuOpen}
@@ -187,7 +212,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       </aside>
 
       {mobileMenuOpen && (
-        <div 
+        <div
           className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[60] lg:hidden"
           onClick={() => setMobileMenuOpen(false)}
         />
@@ -197,8 +222,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         "fixed inset-y-0 left-0 w-72 bg-slate-900 z-[70] lg:hidden flex flex-col transition-all duration-300 ease-in-out shadow-2xl",
         mobileMenuOpen ? "translate-x-0 opacity-100 pointer-events-auto" : "-translate-x-full opacity-0 pointer-events-none"
       )}>
-        <SidebarContent 
-          isMobile 
+        <SidebarContent
+          isMobile
           sidebarOpen={sidebarOpen}
           setSidebarOpen={setSidebarOpen}
           mobileMenuOpen={mobileMenuOpen}
@@ -213,7 +238,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       <main className="flex-1 flex flex-col overflow-hidden relative min-w-0">
         <header className="h-16 bg-white/80 backdrop-blur-md border-b border-slate-200/60 px-4 md:px-8 flex items-center justify-between z-10 sticky top-0">
           <div className="flex items-center gap-4">
-            <button 
+            <button
               onClick={() => setMobileMenuOpen(true)}
               className="lg:hidden p-2 text-slate-600 hover:bg-slate-100 rounded-lg transition-colors"
             >
@@ -223,15 +248,15 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               Dashboard <span className="text-slate-400 mx-1 md:mx-2">/</span> <span className="text-emerald-600">{pathname?.split('/').pop() || 'Overview'}</span>
             </h1>
           </div>
-          
+
           <div className="flex items-center gap-3 md:gap-6">
-             <div className="h-8 w-[1px] bg-slate-100 hidden md:block" />
-             <div className="hidden sm:flex items-center gap-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">
-               {new Date().toLocaleDateString('default', { month: 'short', day: 'numeric', year: 'numeric' })}
-             </div>
-             <div className="h-8 w-8 md:h-9 md:w-9 bg-emerald-500 rounded-full flex items-center justify-center text-white font-bold text-xs shadow-lg shadow-emerald-500/20">
-                {user?.name?.charAt(0) || 'U'}
-             </div>
+            <div className="h-8 w-[1px] bg-slate-100 hidden md:block" />
+            <div className="hidden sm:flex items-center gap-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">
+              {new Date().toLocaleDateString('default', { month: 'short', day: 'numeric', year: 'numeric' })}
+            </div>
+            <div className="h-8 w-8 md:h-9 md:w-9 bg-emerald-500 rounded-full flex items-center justify-center text-white font-bold text-xs shadow-lg shadow-emerald-500/20">
+              {user?.name?.charAt(0) || 'U'}
+            </div>
           </div>
         </header>
 

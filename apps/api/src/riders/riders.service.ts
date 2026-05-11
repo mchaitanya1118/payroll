@@ -17,6 +17,12 @@ export class RidersService {
         companyCode: data.companyCode || data.company_code || null,
         email: data.email || null,
         phoneNumber: data.phoneNumber || data.phone_number || null,
+        status: data.status || "ACTIVE",
+        zone: data.zone || null,
+        nationality: data.nationality || null,
+        vehicleOwnership: data.vehicleOwnership || data.vehicle_ownership || null,
+        vehicleNumber: data.vehicleNumber || data.vehicle_number || null,
+        vehicleModel: data.vehicleModel || data.vehicle_model || null,
       },
     });
   }
@@ -91,6 +97,21 @@ export class RidersService {
         phoneNumber:
           (data.phoneNumber || data.phone_number) !== undefined
             ? data.phoneNumber || data.phone_number
+            : undefined,
+        status: data.status !== undefined ? data.status : undefined,
+        zone: data.zone !== undefined ? data.zone : undefined,
+        nationality: data.nationality !== undefined ? data.nationality : undefined,
+        vehicleOwnership:
+          (data.vehicleOwnership || data.vehicle_ownership) !== undefined
+            ? data.vehicleOwnership || data.vehicle_ownership
+            : undefined,
+        vehicleNumber:
+          (data.vehicleNumber || data.vehicle_number) !== undefined
+            ? data.vehicleNumber || data.vehicle_number
+            : undefined,
+        vehicleModel:
+          (data.vehicleModel || data.vehicle_model) !== undefined
+            ? data.vehicleModel || data.vehicle_model
             : undefined,
       },
     });

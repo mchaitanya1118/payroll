@@ -16,6 +16,8 @@ import { MailModule } from "./mail/mail.module";
 import { UsersModule } from "./users/users.module";
 import { WhatsappModule } from "./whatsapp/whatsapp.module";
 import { AdvancesModule } from "./advances/advances.module";
+import { DailyEntriesModule } from "./daily-entries/daily-entries.module";
+import { RiderGroupsModule } from "./rider-groups/rider-groups.module";
 
 @Module({
   imports: [
@@ -31,6 +33,8 @@ import { AdvancesModule } from "./advances/advances.module";
     UsersModule,
     WhatsappModule,
     AdvancesModule,
+    DailyEntriesModule,
+    RiderGroupsModule,
   ],
   controllers: [AppController, ReportsController],
   providers: [AppService, PrismaService, ReportsService],

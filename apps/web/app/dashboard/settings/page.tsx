@@ -31,7 +31,8 @@ import {
   Download,
   Settings,
   ArrowRight,
-  Upload
+  Upload,
+  Users
 } from 'lucide-react';
 import { 
   Dialog, 
@@ -109,6 +110,18 @@ export default function SettingsPage() {
   const [userEditorLoading, setUserEditorLoading] = useState(false);
   const updateUser = useAuthStore((state) => state.updateUser);
 
+  // Group Management States
+  const [groups, setGroups] = useState<any[]>([]);
+  const [groupsLoading, setGroupsLoading] = useState(true);
+  const [groupEditorOpen, setGroupEditorOpen] = useState(false);
+  const [editingGroup, setEditingGroup] = useState<any>(null);
+  const [groupName, setGroupName] = useState('');
+  const [groupRateEditorOpen, setGroupRateEditorOpen] = useState(false);
+  const [editingGroupRate, setEditingGroupRate] = useState<any>(null);
+  const [allRiders, setAllRiders] = useState<any[]>([]);
+  const [riderAssignmentOpen, setRiderAssignmentOpen] = useState(false);
+  const [selectedRiderIds, setSelectedRiderIds] = useState<string[]>([]);
+
   // Tenant Settings States
   const [tenantSettings, setTenantSettings] = useState({
     name: '',
@@ -125,10 +138,103 @@ export default function SettingsPage() {
 
   useEffect(() => {
     fetchRates();
+    fetchGroups();
     fetchUsers();
+    fetchRiders();
     fetchTenantSettings();
     fetchWaStatus();
   }, []);
+
+  const fetchRiders = async () => {
+    try {
+      const { data } = await api.get('/riders');
+      setAllRiders(data);
+    } catch (error) {
+      console.error('Failed to load riders');
+    }
+  };
+
+  const fetchGroups = async () => {
+    try {
+      setGroupsLoading(true);
+      const { data } = await api.get('/rider-groups');
+      setGroups(data);
+    } catch (error) {
+      toast.error('Failed to load groups');
+    } finally {
+      setGroupsLoading(false);
+    }
+  };
+
+  const handleGroupUpsert = async () => {
+    if (!groupName) return toast.error('Group name is required');
+    try {
+      if (editingGroup) {
+        await api.patch(`/rider-groups/${editingGroup.id}`, { name: groupName });
+      } else {
+        await api.post('/rider-groups', { name: groupName });
+      }
+      toast.success(editingGroup ? 'Group updated' : 'Group created');
+      setGroupEditorOpen(false);
+      fetchGroups();
+    } catch (error) {
+      toast.error('Failed to save group');
+    }
+  };
+
+  const handleGroupDelete = async (id: string) => {
+    if (!confirm('Are you sure? All riders will be unassigned and group rates will be deleted.')) return;
+    try {
+      await api.delete(`/rider-groups/${id}`);
+      toast.success('Group deleted');
+      fetchGroups();
+    } catch (error) {
+      toast.error('Failed to delete group');
+    }
+  };
+
+  const handleGroupRateUpsert = async () => {
+    if (!editingGroup) return;
+    try {
+      await api.post(`/rider-groups/${editingGroup.id}/rates`, {
+        vehicleType: formVehicle,
+        rateType: formRateType,
+        riderRateSingle: parseFloat(formRiderSingle),
+        riderRateDouble: parseFloat(formRiderDouble || '0'),
+        companyRateSingle: parseFloat(formCompanySingle),
+        companyRateDouble: parseFloat(formCompanyDouble || '0'),
+        targetCount: parseInt(formTargetCount || '300'),
+      });
+      toast.success('Group rate saved');
+      setGroupRateEditorOpen(false);
+      fetchGroups();
+    } catch (error) {
+      toast.error('Failed to save group rate');
+    }
+  };
+
+  const handleDeleteGroupRate = async (rateId: string) => {
+    try {
+      await api.delete(`/rider-groups/rates/${rateId}`);
+      toast.success('Group rate removed');
+      fetchGroups();
+    } catch (error) {
+      toast.error('Failed to delete group rate');
+    }
+  };
+
+  const handleRiderAssignment = async () => {
+    if (!editingGroup) return;
+    try {
+      await api.post(`/rider-groups/${editingGroup.id}/riders`, { riderIds: selectedRiderIds });
+      toast.success('Riders assigned successfully');
+      setRiderAssignmentOpen(false);
+      fetchGroups();
+      fetchRiders(); // Refresh rider data to see updated group assignments
+    } catch (error) {
+      toast.error('Failed to assign riders');
+    }
+  };
 
   const fetchWaStatus = async () => {
     try {
@@ -599,6 +705,175 @@ export default function SettingsPage() {
                       )}
                     </TableBody>
                   </Table>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Group Management Section */}
+            <Card className="col-span-1 md:col-span-3 glass-card border-none shadow-2xl rounded-3xl overflow-hidden bg-white/40 backdrop-blur-xl border border-white/60">
+              <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between border-b border-white/40 pb-6 p-6 md:p-8 gap-4">
+                <div className="flex items-center gap-4">
+                  <div className="h-12 w-12 rounded-2xl bg-blue-500/10 flex items-center justify-center text-blue-600 shadow-sm">
+                    <Users size={24} />
+                  </div>
+                  <div>
+                    <CardTitle className="text-xl font-black uppercase italic tracking-tighter text-slate-900 leading-none mb-1">Group Protocol</CardTitle>
+                    <CardDescription className="text-xs font-medium text-slate-500 italic">Create specialized pilot teams with non-batch rates.</CardDescription>
+                  </div>
+                </div>
+                <Button 
+                  onClick={() => {
+                    setEditingGroup(null);
+                    setGroupName('');
+                    setGroupEditorOpen(true);
+                  }} 
+                  className="bg-slate-900 hover:bg-black text-white rounded-2xl px-6 font-black text-[10px] uppercase tracking-[0.2em] shadow-xl transition-all active:scale-95 flex items-center justify-center gap-3 h-10 md:h-12"
+                >
+                  <Plus size={16} /> 
+                  <span>New Group</span>
+                </Button>
+              </CardHeader>
+              <CardContent className="p-0">
+                <div className="grid grid-cols-1 gap-0">
+                  {groupsLoading ? (
+                    <div className="h-40 flex items-center justify-center">
+                      <Loader2 className="animate-spin text-slate-300" size={32} />
+                    </div>
+                  ) : groups.length === 0 ? (
+                    <div className="h-40 flex items-center justify-center text-slate-400 font-medium italic">
+                      No groups created. Standard batch rates will apply to all.
+                    </div>
+                  ) : (
+                    groups.map((group) => (
+                      <div key={group.id} className="p-6 md:p-8 border-b border-white/40 hover:bg-white/30 transition-all group">
+                        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
+                          <div className="flex items-center gap-4">
+                             <div className="h-10 w-10 rounded-xl bg-slate-900 text-white flex items-center justify-center font-black italic shadow-lg">
+                               G
+                             </div>
+                             <div>
+                                <h4 className="text-lg font-black text-slate-900 uppercase italic tracking-tight">{group.name}</h4>
+                                <div className="flex items-center gap-2 mt-1">
+                                   <Badge variant="outline" className="text-[8px] font-black uppercase tracking-widest bg-blue-50 text-blue-600 border-blue-100">
+                                      {group._count.riders} Pilots Assigned
+                                   </Badge>
+                                   <button 
+                                    onClick={() => {
+                                      setEditingGroup(group);
+                                      setSelectedRiderIds(allRiders.filter(r => r.groupId === group.id).map(r => r.id));
+                                      setRiderAssignmentOpen(true);
+                                    }}
+                                    className="text-[8px] font-black uppercase tracking-widest text-slate-400 hover:text-blue-600 underline flex items-center gap-1"
+                                   >
+                                      Manage Fleet <ArrowRight size={10} />
+                                   </button>
+                                </div>
+                             </div>
+                          </div>
+                          <div className="flex items-center gap-2">
+                             <Button 
+                              variant="outline" 
+                              size="sm" 
+                              onClick={() => {
+                                setEditingGroup(group);
+                                setGroupName(group.name);
+                                setGroupEditorOpen(true);
+                              }}
+                              className="rounded-xl border-slate-200 text-slate-500 font-black text-[10px] uppercase h-9"
+                             >
+                                Edit Name
+                             </Button>
+                             <Button 
+                              variant="outline" 
+                              size="sm" 
+                              onClick={() => {
+                                setEditingGroup(group);
+                                setEditingRate(null);
+                                setFormVehicle('BIKE');
+                                setFormRateType('TARGET');
+                                setFormRiderSingle('');
+                                setFormRiderDouble('');
+                                setFormCompanySingle('');
+                                setFormCompanyDouble('');
+                                setFormTargetCount('300');
+                                setGroupRateEditorOpen(true);
+                              }}
+                              className="rounded-xl border-blue-200 text-blue-600 hover:bg-blue-50 font-black text-[10px] uppercase h-9"
+                             >
+                                <Plus size={14} className="mr-1" /> Add Rate
+                             </Button>
+                             <Button 
+                              variant="ghost" 
+                              size="icon" 
+                              onClick={() => handleGroupDelete(group.id)}
+                              className="text-red-400 hover:text-red-600 hover:bg-red-50 rounded-xl h-9 w-9"
+                             >
+                                <Trash2 size={16} />
+                             </Button>
+                          </div>
+                        </div>
+
+                        {/* Group Rates Table */}
+                        <div className="bg-white/50 rounded-2xl overflow-hidden border border-white/60">
+                           <Table>
+                              <TableHeader className="bg-slate-100/50">
+                                <TableRow className="h-10 border-b border-white/60">
+                                   <TableHead className="text-[9px] font-black uppercase tracking-widest pl-6">Vehicle</TableHead>
+                                   <TableHead className="text-[9px] font-black uppercase tracking-widest">Type</TableHead>
+                                   <TableHead className="text-[9px] font-black uppercase tracking-widest text-center">Rider Payout (S/D)</TableHead>
+                                   <TableHead className="text-[9px] font-black uppercase tracking-widest text-center">Company Rev (S/D)</TableHead>
+                                   <TableHead className="text-[9px] font-black uppercase tracking-widest text-right pr-6">Action</TableHead>
+                                </TableRow>
+                              </TableHeader>
+                              <TableBody>
+                                 {group.rates.length === 0 ? (
+                                   <TableRow>
+                                      <TableCell colSpan={5} className="h-20 text-center text-[10px] font-medium text-slate-400 italic">
+                                         No specialized rates defined for this group.
+                                      </TableCell>
+                                   </TableRow>
+                                 ) : (
+                                   group.rates.map((rate: any) => (
+                                     <TableRow key={rate.id} className="h-14 border-b border-white/20 last:border-0 hover:bg-emerald-50/10 transition-all">
+                                        <TableCell className="pl-6">
+                                           <span className={cn(
+                                              "inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-widest",
+                                              rate.vehicleType === 'CAR' ? "bg-blue-50 text-blue-600" : "bg-purple-50 text-purple-600"
+                                           )}>
+                                              {rate.vehicleType === 'CAR' ? <Car size={10} /> : <Bike size={10} />}
+                                              {rate.vehicleType}
+                                           </span>
+                                        </TableCell>
+                                        <TableCell>
+                                           <Badge variant="outline" className="text-[8px] font-black uppercase tracking-widest h-5 px-1.5 border-slate-200 text-slate-400">
+                                              {rate.rateType}
+                                           </Badge>
+                                        </TableCell>
+                                        <TableCell className="text-center">
+                                           <span className="text-xs font-black text-slate-900 tracking-tighter tabular-nums">{rate.riderRateSingle} / {rate.riderRateDouble}</span>
+                                        </TableCell>
+                                        <TableCell className="text-center">
+                                           <span className="text-xs font-black text-emerald-600 tracking-tighter tabular-nums">{rate.companyRateSingle} / {rate.companyRateDouble}</span>
+                                        </TableCell>
+                                        <TableCell className="text-right pr-6">
+                                           <Button 
+                                            variant="ghost" 
+                                            size="icon" 
+                                            onClick={() => handleDeleteGroupRate(rate.id)}
+                                            className="h-8 w-8 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-lg"
+                                           >
+                                              <X size={14} />
+                                           </Button>
+                                        </TableCell>
+                                     </TableRow>
+                                   ))
+                                 )}
+                              </TableBody>
+                           </Table>
+                        </div>
+                      </div>
+                    ))
+                  )}
                 </div>
               </CardContent>
             </Card>
@@ -1332,6 +1607,226 @@ export default function SettingsPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Group Editor Dialog */}
+      <Dialog open={groupEditorOpen} onOpenChange={setGroupEditorOpen}>
+        <DialogContent className="sm:max-w-[450px] border-none shadow-2xl p-0 overflow-hidden bg-white">
+          <DialogHeader className="p-8 bg-slate-900 text-white">
+            <div className="flex items-center gap-3 mb-2">
+                <div className="h-10 w-10 rounded-2xl bg-blue-500/20 flex items-center justify-center">
+                    <UserPlus className="text-blue-500" />
+                </div>
+                <div>
+                    <DialogTitle className="text-2xl font-black uppercase italic tracking-tight">
+                        {editingGroup ? 'Rename Group' : 'Initialize Group'}
+                    </DialogTitle>
+                    <DialogDescription className="text-slate-400">
+                        Define a new specialized pilot segment.
+                    </DialogDescription>
+                </div>
+            </div>
+          </DialogHeader>
+
+          <div className="p-8 space-y-5">
+            <div className="space-y-2">
+              <Label className="text-[10px] uppercase font-black tracking-widest text-slate-400 pl-1">Group Identifier</Label>
+              <Input 
+                value={groupName} 
+                onChange={(e) => setGroupName(e.target.value)}
+                placeholder="Ex. Elite Fleet or Special Ops"
+                className="rounded-xl h-12 border-slate-200 focus:border-blue-500/50 transition-all font-bold uppercase"
+              />
+            </div>
+          </div>
+
+          <DialogFooter className="p-8 pt-0">
+            <Button 
+                onClick={handleGroupUpsert} 
+                className="w-full bg-blue-600 hover:bg-blue-500 text-white h-14 rounded-2xl font-black uppercase italic tracking-tighter text-lg shadow-xl shadow-blue-500/20"
+            >
+              {editingGroup ? 'Update Protocol' : 'Deploy Group'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Group Rate Editor Dialog */}
+      <Dialog open={groupRateEditorOpen} onOpenChange={setGroupRateEditorOpen}>
+        <DialogContent className="sm:max-w-[500px] border-none shadow-2xl p-0 overflow-hidden bg-white">
+          <DialogHeader className="p-8 bg-blue-600 text-white">
+            <div className="flex items-center gap-3 mb-2">
+                <div className="h-10 w-10 rounded-2xl bg-white/20 flex items-center justify-center">
+                    <Calculator className="text-white" />
+                </div>
+                <div>
+                    <DialogTitle className="text-2xl font-black uppercase italic tracking-tight">
+                        Group Specialized Rate
+                    </DialogTitle>
+                    <DialogDescription className="text-blue-100">
+                        Applying custom rates for group: <span className="font-black underline">{editingGroup?.name}</span>
+                    </DialogDescription>
+                </div>
+            </div>
+          </DialogHeader>
+          
+          <div className="p-8 space-y-6">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label className="text-[10px] uppercase font-black tracking-widest text-slate-400 pl-1">Vehicle Type</Label>
+                <Select value={formVehicle} onValueChange={(val) => setFormVehicle(val || 'BIKE')}>
+                  <SelectTrigger className="rounded-xl h-12 border-slate-200 font-bold">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent className="rounded-xl border-slate-100">
+                    <SelectItem value="BIKE" className="font-bold">BIKE</SelectItem>
+                    <SelectItem value="CAR" className="font-bold">CAR</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label className="text-[10px] uppercase font-black tracking-widest text-slate-400 pl-1">Rate Type</Label>
+                <Select value={formRateType} onValueChange={(val) => setFormRateType(val || 'TARGET')}>
+                  <SelectTrigger className="rounded-xl h-12 border-slate-200 font-bold">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent className="rounded-xl border-slate-100">
+                    <SelectItem value="TARGET" className="font-bold">TARGET BASED</SelectItem>
+                    <SelectItem value="NO_TARGET" className="font-bold">NO TARGET (FLAT)</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              {formRateType === 'TARGET' && (
+                <div className="col-span-2 space-y-2">
+                  <Label className="text-[10px] uppercase font-black tracking-widest text-slate-400 pl-1">Target Orders (Month)</Label>
+                  <Input 
+                    type="number" 
+                    value={formTargetCount} 
+                    onChange={(e) => setFormTargetCount(e.target.value)}
+                    placeholder="e.g. 300"
+                    className="rounded-xl h-12 border-slate-200 focus:border-blue-500/50 transition-all font-bold"
+                  />
+                </div>
+              )}
+            </div>
+
+            <div className="space-y-4">
+                <div className="p-4 bg-slate-50/80 rounded-2xl border border-slate-100">
+                    <p className="text-[10px] font-black uppercase text-slate-400 tracking-widest mb-4">Rider Payout (Cost)</p>
+                    <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-1.5">
+                            <Label className="text-[9px] font-bold text-slate-500">Single Rate</Label>
+                            <Input 
+                                type="number" 
+                                value={formRiderSingle} 
+                                onChange={(e) => setFormRiderSingle(e.target.value)}
+                                className="h-10 border-none bg-white shadow-sm font-bold text-center"
+                            />
+                        </div>
+                        <div className="space-y-1.5">
+                            <Label className="text-[9px] font-bold text-slate-500">Double Rate</Label>
+                            <Input 
+                                type="number" 
+                                value={formRiderDouble} 
+                                onChange={(e) => setFormRiderDouble(e.target.value)}
+                                className="h-10 border-none bg-white shadow-sm font-bold text-center"
+                            />
+                        </div>
+                    </div>
+                </div>
+
+                <div className="p-4 bg-blue-50/50 rounded-2xl border border-blue-100">
+                    <p className="text-[10px] font-black uppercase text-blue-600 tracking-widest mb-4">Company Revenue</p>
+                    <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-1.5">
+                            <Label className="text-[9px] font-bold text-blue-700/60">Single Rate</Label>
+                            <Input 
+                                type="number" 
+                                value={formCompanySingle} 
+                                onChange={(e) => setFormCompanySingle(e.target.value)}
+                                className="h-10 border-none bg-white shadow-sm font-bold text-center text-blue-600"
+                            />
+                        </div>
+                        <div className="space-y-1.5">
+                            <Label className="text-[9px] font-bold text-blue-700/60">Double Rate</Label>
+                            <Input 
+                                type="number" 
+                                value={formCompanyDouble} 
+                                onChange={(e) => setFormCompanyDouble(e.target.value)}
+                                className="h-10 border-none bg-white shadow-sm font-bold text-center text-blue-600"
+                            />
+                        </div>
+                    </div>
+                </div>
+            </div>
+          </div>
+
+          <DialogFooter className="p-8 pt-0">
+            <Button 
+                onClick={handleGroupRateUpsert} 
+                className="w-full bg-blue-600 hover:bg-blue-700 text-white h-14 rounded-2xl font-black uppercase italic tracking-tighter text-lg shadow-xl shadow-blue-500/10"
+            >
+              Authorize Group Rate
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Rider Assignment Dialog */}
+      <Dialog open={riderAssignmentOpen} onOpenChange={setRiderAssignmentOpen}>
+        <DialogContent className="sm:max-w-[500px] border-none shadow-2xl p-0 overflow-hidden bg-white">
+          <DialogHeader className="p-8 bg-slate-900 text-white">
+            <DialogTitle className="text-2xl font-black uppercase italic tracking-tight">Manage Group Fleet</DialogTitle>
+            <DialogDescription className="text-slate-400 font-medium">Assign or remove riders from <span className="text-emerald-500">{editingGroup?.name}</span></DialogDescription>
+          </DialogHeader>
+          
+          <div className="p-8">
+             <div className="max-h-[300px] overflow-y-auto pr-2 space-y-2 scrollbar-hide">
+                {allRiders.map((rider) => (
+                  <div 
+                    key={rider.id} 
+                    onClick={() => {
+                      if (selectedRiderIds.includes(rider.id)) {
+                        setSelectedRiderIds(selectedRiderIds.filter(id => id !== rider.id));
+                      } else {
+                        setSelectedRiderIds([...selectedRiderIds, rider.id]);
+                      }
+                    }}
+                    className={cn(
+                      "p-4 rounded-2xl border-2 transition-all cursor-pointer flex items-center justify-between",
+                      selectedRiderIds.includes(rider.id) 
+                        ? "border-emerald-500 bg-emerald-50" 
+                        : "border-slate-100 hover:border-slate-200"
+                    )}
+                  >
+                     <div className="flex items-center gap-3">
+                        <div className={cn(
+                          "h-10 w-10 rounded-xl flex items-center justify-center font-black text-xs uppercase",
+                          selectedRiderIds.includes(rider.id) ? "bg-emerald-500 text-white" : "bg-slate-100 text-slate-400"
+                        )}>
+                           {rider.riderName.charAt(0)}
+                        </div>
+                        <div>
+                           <p className="text-sm font-black text-slate-900">{rider.riderName}</p>
+                           <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{rider.riderId} • {rider.vehicleType}</p>
+                        </div>
+                     </div>
+                     {selectedRiderIds.includes(rider.id) && <CheckCircle2 size={20} className="text-emerald-500" />}
+                  </div>
+                ))}
+             </div>
+          </div>
+
+          <DialogFooter className="p-8 pt-0">
+            <Button 
+                onClick={handleRiderAssignment} 
+                className="w-full bg-slate-900 hover:bg-black text-white h-14 rounded-2xl font-black uppercase italic tracking-tighter text-lg shadow-xl"
+            >
+              Save Fleet Assignments
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       <div className="glass-card border-none shadow-xl p-8 rounded-3xl bg-gradient-to-br from-slate-900 to-slate-800 text-white relative overflow-hidden mt-8">
         <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-500/10 rounded-full blur-3xl -mr-32 -mt-32"></div>
         <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-8">

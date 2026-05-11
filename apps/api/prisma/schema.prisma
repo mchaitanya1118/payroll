@@ -21,6 +21,7 @@ model Tenant {
   users     User[]
   rateConfigs RateConfig[]
   advances  Advance[]
+  riderGroups RiderGroup[]
 }
 
 model User {
@@ -47,12 +48,50 @@ model Rider {
   createdAt    DateTime     @default(now())
   updatedAt    DateTime     @updatedAt
   companyCode  String?
+  status            String?      @default("ACTIVE")
+  zone              String?
+  nationality       String?
+  vehicleOwnership  String?
+  vehicleNumber     String?
+  vehicleModel      String?
+  groupId      String?
+  group        RiderGroup?  @relation(fields: [groupId], references: [id])
   dailyEntries DailyEntry[]
   payslips     Payslip[]
   advances     Advance[]
   tenant       Tenant       @relation(fields: [tenantId], references: [id])
 
   @@unique([tenantId, riderId])
+}
+
+model RiderGroup {
+  id        String   @id @default(cuid())
+  name      String
+  tenantId  String
+  riders    Rider[]
+  rates     GroupRate[]
+  tenant    Tenant   @relation(fields: [tenantId], references: [id])
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([tenantId, name])
+}
+
+model GroupRate {
+  id                String       @id @default(cuid())
+  groupId           String
+  vehicleType       VehicleType
+  rateType          RateType     @default(TARGET)
+  targetCount       Int          @default(300)
+  riderRateSingle   Float
+  riderRateDouble   Float
+  companyRateSingle Float
+  companyRateDouble Float
+  group             RiderGroup   @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  createdAt         DateTime     @default(now())
+  updatedAt         DateTime     @updatedAt
+
+  @@unique([groupId, vehicleType, rateType])
 }
 
 model Batch {
@@ -131,6 +170,10 @@ model DailyEntry {
   companyRateDouble Float?
   companyAmount     Float?   @default(0)
 
+  status         String?  @default("working")
+  cashCollected  Float?   @default(0)
+  orders         Int      @default(0)
+  
   payrollMonth   Int?
   payrollYear    Int?
   createdAt      DateTime @default(now())

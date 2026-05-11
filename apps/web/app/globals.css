@@ -158,6 +158,15 @@
   .sidebar-item-active {
     @apply bg-gradient-to-r from-emerald-500 to-emerald-600 text-slate-900 font-bold shadow-lg shadow-emerald-500/20 translate-x-1;
   }
+
+  @keyframes bounce-slow {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-10px); }
+  }
+
+  .animate-bounce-slow {
+    animation: bounce-slow 3s ease-in-out infinite;
+  }
 }
 /* Hide Next.js Dev Indicator */
 #__next-prerender-indicator,

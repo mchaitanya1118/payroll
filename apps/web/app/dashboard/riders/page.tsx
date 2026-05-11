@@ -25,6 +25,12 @@ interface Rider {
   companyCode?: string;
   email?: string;
   phoneNumber?: string;
+  status?: string;
+  zone?: string;
+  nationality?: string;
+  vehicleOwnership?: string;
+  vehicleNumber?: string;
+  vehicleModel?: string;
   createdAt: string;
 }
 
@@ -48,6 +54,12 @@ export default function RidersPage() {
   const [newCompany, setNewCompany] = useState('');
   const [newEmail, setNewEmail] = useState('');
   const [newPhone, setNewPhone] = useState('');
+  const [newStatus, setNewStatus] = useState('ACTIVE');
+  const [newZone, setNewZone] = useState('');
+  const [newNationality, setNewNationality] = useState('');
+  const [newVehicleOwnership, setNewVehicleOwnership] = useState('');
+  const [newVehicleNumber, setNewVehicleNumber] = useState('');
+  const [newVehicleModel, setNewVehicleModel] = useState('');
 
   const fetchRiders = async () => {
     try {
@@ -95,6 +107,12 @@ export default function RidersPage() {
     setNewPhone('');
     setNewVehicle('BIKE');
     setNewRateType('TARGET');
+    setNewStatus('ACTIVE');
+    setNewZone('');
+    setNewNationality('');
+    setNewVehicleOwnership('');
+    setNewVehicleNumber('');
+    setNewVehicleModel('');
     setOpen(true);
   };
 
@@ -107,6 +125,12 @@ export default function RidersPage() {
     setNewPhone(rider.phoneNumber || '');
     setNewVehicle(rider.vehicleType);
     setNewRateType(rider.rateType || 'TARGET');
+    setNewStatus(rider.status || 'ACTIVE');
+    setNewZone(rider.zone || '');
+    setNewNationality(rider.nationality || '');
+    setNewVehicleOwnership(rider.vehicleOwnership || '');
+    setNewVehicleNumber(rider.vehicleNumber || '');
+    setNewVehicleModel(rider.vehicleModel || '');
     setOpen(true);
   };
 
@@ -123,6 +147,12 @@ export default function RidersPage() {
           companyCode: newCompany,
           email: newEmail,
           phoneNumber: newPhone,
+          status: newStatus,
+          zone: newZone,
+          nationality: newNationality,
+          vehicleOwnership: newVehicleOwnership,
+          vehicleNumber: newVehicleNumber,
+          vehicleModel: newVehicleModel,
         });
       } else {
         await api.post('/riders', {
@@ -133,6 +163,12 @@ export default function RidersPage() {
           companyCode: newCompany,
           email: newEmail,
           phoneNumber: newPhone,
+          status: newStatus,
+          zone: newZone,
+          nationality: newNationality,
+          vehicleOwnership: newVehicleOwnership,
+          vehicleNumber: newVehicleNumber,
+          vehicleModel: newVehicleModel,
         });
       }
       toast.success(editingId ? "Pilot profile updated" : "New pilot enrolled successfully");
@@ -314,14 +350,80 @@ export default function RidersPage() {
                 </div>
               </div>
 
-              <div className="space-y-2">
-                <Label className="text-[10px] uppercase font-black tracking-widest text-slate-400 pl-1">COMPANY CODE</Label>
-                <Input 
-                  value={newCompany} 
-                  onChange={e => setNewCompany(e.target.value)} 
-                  placeholder="Ex. BLR-HUB-01" 
-                  className="rounded-xl h-12 border-slate-200 focus:border-emerald-500 transition-all font-bold"
-                />
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className="space-y-2">
+                  <Label className="text-[10px] uppercase font-black tracking-widest text-slate-400 pl-1">COMPANY CODE</Label>
+                  <Input 
+                    value={newCompany} 
+                    onChange={e => setNewCompany(e.target.value)} 
+                    placeholder="Ex. BLR-HUB" 
+                    className="rounded-xl h-12 border-slate-200 focus:border-emerald-500 transition-all font-bold"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-[10px] uppercase font-black tracking-widest text-slate-400 pl-1">ZONE</Label>
+                  <Input 
+                    value={newZone} 
+                    onChange={e => setNewZone(e.target.value)} 
+                    placeholder="Ex. Riyadh" 
+                    className="rounded-xl h-12 border-slate-200 focus:border-emerald-500 transition-all font-bold"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-[10px] uppercase font-black tracking-widest text-slate-400 pl-1">NATIONALITY</Label>
+                  <Input 
+                    value={newNationality} 
+                    onChange={e => setNewNationality(e.target.value)} 
+                    placeholder="Ex. Saudi" 
+                    className="rounded-xl h-12 border-slate-200 focus:border-emerald-500 transition-all font-bold"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-2">
+                  <Label className="text-[10px] uppercase font-black tracking-widest text-slate-400 pl-1">VEHICLE NUMBER</Label>
+                  <Input 
+                    value={newVehicleNumber} 
+                    onChange={e => setNewVehicleNumber(e.target.value)} 
+                    placeholder="Ex. ABC-1234" 
+                    className="rounded-xl h-12 border-slate-200 focus:border-emerald-500 transition-all font-bold"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-[10px] uppercase font-black tracking-widest text-slate-400 pl-1">VEHICLE MODEL</Label>
+                  <Input 
+                    value={newVehicleModel} 
+                    onChange={e => setNewVehicleModel(e.target.value)} 
+                    placeholder="Ex. Toyota Hilux 2023" 
+                    className="rounded-xl h-12 border-slate-200 focus:border-emerald-500 transition-all font-bold"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-2">
+                  <Label className="text-[10px] uppercase font-black tracking-widest text-slate-400 pl-1">VEHICLE OWNERSHIP</Label>
+                  <Input 
+                    value={newVehicleOwnership} 
+                    onChange={e => setNewVehicleOwnership(e.target.value)} 
+                    placeholder="Ex. Company Owned / Private" 
+                    className="rounded-xl h-12 border-slate-200 focus:border-emerald-500 transition-all font-bold"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-[10px] uppercase font-black tracking-widest text-slate-400 pl-1">STATUS</Label>
+                  <Select value={newStatus} onValueChange={(v) => v && setNewStatus(v)}>
+                    <SelectTrigger className="rounded-xl h-12 border-slate-200 font-bold uppercase text-[10px] tracking-widest">
+                      <SelectValue placeholder="Status" />
+                    </SelectTrigger>
+                    <SelectContent className="rounded-xl border-slate-100 shadow-2xl">
+                      <SelectItem value="ACTIVE" className="font-bold text-emerald-600">🟢 ACTIVE</SelectItem>
+                      <SelectItem value="INACTIVE" className="font-bold text-slate-400">⚪ INACTIVE</SelectItem>
+                      <SelectItem value="SUSPENDED" className="font-bold text-red-600">🔴 SUSPENDED</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -496,6 +598,30 @@ export default function RidersPage() {
                     </div>
                   </div>
                 </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">Zone / Nation</p>
+                    <p className="text-[11px] font-bold text-slate-700">{r.zone || '—'} / {r.nationality || '—'}</p>
+                  </div>
+                  <div>
+                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">Status</p>
+                    <Badge className={cn(
+                      "font-black text-[9px] tracking-widest uppercase px-2 py-0.5 border-none",
+                      r.status === 'ACTIVE' ? "bg-emerald-100 text-emerald-700" : r.status === 'SUSPENDED' ? "bg-red-100 text-red-700" : "bg-slate-100 text-slate-700"
+                    )}>
+                      {r.status || 'ACTIVE'}
+                    </Badge>
+                  </div>
+                </div>
+
+                {r.vehicleNumber && (
+                   <div className="bg-slate-50 p-3 rounded-xl border border-slate-100">
+                      <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Vehicle Details</p>
+                      <p className="text-xs font-black text-slate-900">{r.vehicleNumber} <span className="text-slate-400 font-bold ml-2">• {r.vehicleModel}</span></p>
+                      <p className="text-[10px] text-slate-500 mt-0.5 italic">{r.vehicleOwnership}</p>
+                   </div>
+                )}
               </div>
             </div>
           ))}
@@ -513,7 +639,10 @@ export default function RidersPage() {
                 <TableHead className="font-black text-slate-900 tracking-widest text-[10px] uppercase h-14">PILOT NAME</TableHead>
                 <TableHead className="font-black text-slate-900 tracking-widest text-[10px] uppercase h-14">CONTACT INFO</TableHead>
                 <TableHead className="font-black text-slate-900 text-center tracking-widest text-[10px] uppercase h-14">COMPANY</TableHead>
-                <TableHead className="font-black text-slate-900 text-center tracking-widest text-[10px] uppercase h-14">VEHICLE</TableHead>
+                <TableHead className="font-black text-slate-900 text-center tracking-widest text-[10px] uppercase h-14">STATUS</TableHead>
+                <TableHead className="font-black text-slate-900 tracking-widest text-[10px] uppercase h-14">ZONE & NATION</TableHead>
+                <TableHead className="font-black text-slate-900 tracking-widest text-[10px] uppercase h-14">VEHICLE DETAILS</TableHead>
+                <TableHead className="font-black text-slate-900 text-center tracking-widest text-[10px] uppercase h-14">CLASS</TableHead>
                 <TableHead className="font-black text-slate-900 text-right tracking-widest text-[10px] uppercase h-14 px-8">ACTION</TableHead>
               </TableRow>
             </TableHeader>
@@ -547,6 +676,27 @@ export default function RidersPage() {
                       <span className="text-xs text-slate-400 font-bold">—</span>
                     )}
                   </TableCell>
+                  <TableCell>
+                    <Badge className={cn(
+                      "font-black text-[9px] tracking-widest uppercase px-2 py-1 border-none",
+                      r.status === 'ACTIVE' ? "bg-emerald-100 text-emerald-700" : r.status === 'SUSPENDED' ? "bg-red-100 text-red-700" : "bg-slate-100 text-slate-700"
+                    )}>
+                      {r.status || 'ACTIVE'}
+                    </Badge>
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex flex-col gap-0.5">
+                      <span className="text-[10px] font-bold text-slate-800">{r.zone || '—'}</span>
+                      <span className="text-[9px] font-medium text-slate-400 uppercase tracking-tighter">{r.nationality || '—'}</span>
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex flex-col gap-0.5">
+                      <span className="text-[10px] font-black text-slate-900">{r.vehicleNumber || '—'}</span>
+                      <span className="text-[9px] font-bold text-slate-500">{r.vehicleModel || '—'}</span>
+                      <span className="text-[8px] italic text-slate-400 truncate max-w-[120px]">{r.vehicleOwnership || '—'}</span>
+                    </div>
+                  </TableCell>
                   <TableCell className="text-center">
                     <div className="flex flex-col items-center gap-1.5">
                       <Badge className={cn(
@@ -577,7 +727,7 @@ export default function RidersPage() {
               ))}
               {riders.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={6} className="text-center text-slate-400 py-20 italic font-medium">
+                  <TableCell colSpan={9} className="text-center text-slate-400 py-20 italic font-medium">
                     No riders found matching your criteria.
                   </TableCell>
                 </TableRow>
